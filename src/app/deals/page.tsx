@@ -20,14 +20,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MoreHorizontal, File, PlusCircle, ListFilter, Search } from 'lucide-react';
+import { MoreHorizontal, File, PlusCircle, Search } from 'lucide-react';
 
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { dealsData } from '@/lib/data';
+import { getDeals, Deal } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 
 const getBadgeVariant = (stage: string) => {
@@ -44,47 +44,54 @@ const getBadgeVariant = (stage: string) => {
 }
 
 export default function DealsPage() {
-  const [deals, setDeals] = React.useState(dealsData);
+  const [allDeals, setAllDeals] = React.useState<Deal[]>([]);
+  const [filteredDeals, setFilteredDeals] = React.useState<Deal[]>([]);
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
 
+  React.useEffect(() => {
+    const deals = getDeals();
+    setAllDeals(deals);
+    setFilteredDeals(deals);
+  }, []);
+
+  const filterDeals = React.useCallback((tab: string, term: string) => {
+    let deals = [...allDeals];
+    
+    // Filter by tab
+    const formattedTab = tab.toLowerCase().replace(' ', '');
+    if (formattedTab !== 'all') {
+      deals = deals.filter(deal => deal.stage.toLowerCase().replace(' ', '') === formattedTab);
+    }
+    
+    // Filter by search term
+    if (term) {
+      deals = deals.filter(deal =>
+        deal.name.toLowerCase().includes(term.toLowerCase()) ||
+        deal.company.toLowerCase().includes(term.toLowerCase())
+      );
+    }
+    
+    setFilteredDeals(deals);
+  }, [allDeals]);
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    const filteredByName = dealsData.filter(deal => deal.name.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    if (value === 'all') {
-      setDeals(filteredByName);
-    } else {
-      setDeals(filteredByName.filter(deal => deal.stage.toLowerCase().replace(' ', '') === value));
-    }
+    filterDeals(value, searchTerm);
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value;
     setSearchTerm(term);
-    const filteredByStage = activeTab === 'all' 
-      ? dealsData 
-      : dealsData.filter(d => d.stage.toLowerCase().replace(' ', '') === activeTab);
-    
-    if (term === '') {
-        setDeals(filteredByStage);
-    } else {
-        setDeals(
-            filteredByStage.filter(deal =>
-                deal.name.toLowerCase().includes(term.toLowerCase()) ||
-                deal.company.toLowerCase().includes(term.toLowerCase())
-            )
-        );
-    }
+    filterDeals(activeTab, term);
   };
-
 
   return (
     <DashboardLayout>
       <div className="flex flex-col w-full">
         <Header />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-          <Tabs defaultValue="all" onValueChange={handleTabChange}>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
             <div className="flex items-center">
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
@@ -142,7 +149,7 @@ export default function DealsPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {deals.map(deal => (
+                        {filteredDeals.map(deal => (
                             <TableRow key={deal.id}>
                                 <TableCell className="font-medium">{deal.name}</TableCell>
                                 <TableCell>
@@ -173,7 +180,7 @@ export default function DealsPage() {
                         ))}
                         </TableBody>
                     </Table>
-                     {deals.length === 0 && (
+                     {filteredDeals.length === 0 && (
                         <div className="text-center py-10">
                             <p className="text-muted-foreground">No deals found.</p>
                         </div>

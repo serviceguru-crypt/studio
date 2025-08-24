@@ -25,7 +25,15 @@ export const leadsData = [
   { name: 'Email', count: 10, fill: 'hsl(var(--chart-4))' },
 ];
 
-export const dealsData = [
+export type Deal = {
+    id: string;
+    name: string;
+    stage: 'Qualification' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost';
+    value: number;
+    company: string;
+}
+
+export const initialDealsData: Deal[] = [
     { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, company: 'AgriMart' },
     { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, company: 'FinServe Solutions' },
     { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, company: 'TechCo Nigeria' },
@@ -103,3 +111,30 @@ export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar'>
     localStorage.setItem('customers', JSON.stringify(updatedCustomers));
     return newCustomer;
 };
+
+// Helper to get deals from local storage
+export const getDeals = (): Deal[] => {
+    if (typeof window === 'undefined') {
+        return initialDealsData;
+    }
+    const storedDeals = localStorage.getItem('deals');
+    if (storedDeals) {
+        return JSON.parse(storedDeals);
+    }
+    localStorage.setItem('deals', JSON.stringify(initialDealsData));
+    return initialDealsData;
+};
+
+// Helper to add a deal to local storage
+export const addDeal = (deal: Omit<Deal, 'id'>) => {
+    const deals = getDeals();
+    const newDeal: Deal = {
+        ...deal,
+        id: `D${(deals.length + 1).toString().padStart(3, '0')}`,
+    };
+    const updatedDeals = [...deals, newDeal];
+    localStorage.setItem('deals', JSON.stringify(updatedDeals));
+    return newDeal;
+};
+
+export const dealsData = initialDealsData;
