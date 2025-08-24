@@ -93,7 +93,10 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
     try {
         const storedData = localStorage.getItem(key);
         if (storedData) {
-            return JSON.parse(storedData);
+            const parsedData = JSON.parse(storedData);
+            if (Array.isArray(parsedData) && parsedData.length > 0) {
+                return parsedData;
+            }
         }
         localStorage.setItem(key, JSON.stringify(initialData));
         return initialData;
@@ -103,17 +106,20 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
     }
 }
 
+// Initialize data sources
 let customersData = initializeData('customers', initialCustomersData);
-dealsData = initializeData('deals', dealsData);
+let dealsDataStore = initializeData('deals', dealsData);
 
 
 // Helper to get customers from local storage
 export const getCustomers = (): Customer[] => {
+    customersData = initializeData('customers', initialCustomersData);
     return customersData;
 };
 
 // Helper to add a customer to local storage
 export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar'>) => {
+    getCustomers(); // Ensure customersData is fresh
     const newCustomer: Customer = {
         ...customer,
         id: `C${(customersData.length + 1).toString().padStart(3, '0')}`,
@@ -127,36 +133,39 @@ export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar'>
 
 // Helper to get deals from local storage
 export const getDeals = (): Deal[] => {
-    return dealsData;
+    dealsDataStore = initializeData('deals', dealsData);
+    return dealsDataStore;
 };
 
 // Helper to add a deal to local storage
 export const addDeal = (deal: Omit<Deal, 'id'>) => {
+    getDeals(); // Ensure dealsDataStore is fresh
     const newDeal: Deal = {
         ...deal,
-        id: `D${(dealsData.length + 1).toString().padStart(3, '0')}`,
+        id: `D${(dealsDataStore.length + 1).toString().padStart(3, '0')}`,
     };
-    dealsData = [...dealsData, newDeal];
-    localStorage.setItem('deals', JSON.stringify(dealsData));
+    dealsDataStore = [...dealsDataStore, newDeal];
+    localStorage.setItem('deals', JSON.stringify(dealsDataStore));
     return newDeal;
 };
 
 export const getDealById = (id: string): Deal | undefined => {
-    return dealsData.find(deal => deal.id === id);
+    return getDeals().find(deal => deal.id === id);
 }
 
 export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) => {
-    const dealIndex = dealsData.findIndex(deal => deal.id === id);
+    const deals = getDeals();
+    const dealIndex = deals.findIndex(deal => deal.id === id);
     if (dealIndex > -1) {
-        dealsData[dealIndex] = { ...dealsData[dealIndex], ...updatedData };
-        localStorage.setItem('deals', JSON.stringify(dealsData));
-        return dealsData[dealIndex];
+        deals[dealIndex] = { ...deals[dealIndex], ...updatedData };
+        localStorage.setItem('deals', JSON.stringify(deals));
+        return deals[dealIndex];
     }
     return null;
 };
 
 export const deleteDeal = (id: string) => {
-    dealsData = dealsData.filter(deal => deal.id !== id);
-    localStorage.setItem('deals', JSON.stringify(dealsData));
+    let deals = getDeals();
+    deals = deals.filter(deal => deal.id !== id);
+    localStorage.setItem('deals', JSON.stringify(deals));
 };
-

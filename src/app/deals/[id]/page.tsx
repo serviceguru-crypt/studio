@@ -98,7 +98,7 @@ export default function DealDetailsPage() {
                             </div>
                              <div className="grid gap-1">
                                 <p className="text-sm font-medium text-muted-foreground">Stage</p>
-                                <p><Badge variant={getBadgeVariant(deal.stage)}>{deal.stage}</Badge></p>
+                                <div><Badge variant={getBadgeVariant(deal.stage)}>{deal.stage}</Badge></div>
                             </div>
                         </CardContent>
                     </Card>
@@ -107,4 +107,3 @@ export default function DealDetailsPage() {
         </DashboardLayout>
     );
 }
-
