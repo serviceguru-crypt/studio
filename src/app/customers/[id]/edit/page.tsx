@@ -65,7 +65,7 @@ export default function EditCustomerPage() {
             title: "Customer Updated",
             description: "The customer has been updated successfully.",
         });
-        router.push('/customers');
+        router.push(`/customers/${id}`);
     }
   }
 

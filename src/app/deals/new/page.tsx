@@ -52,12 +52,12 @@ export default function NewDealPage() {
   });
 
   function onSubmit(data: DealFormValues) {
-    addDeal(data);
+    const newDeal = addDeal(data);
     toast({
       title: "Deal Created",
       description: "The new deal has been added successfully.",
     });
-    router.push('/deals');
+    router.push(`/deals/${newDeal.id}`);
   }
 
   return (

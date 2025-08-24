@@ -74,7 +74,7 @@ export default function EditDealPage() {
             title: "Deal Updated",
             description: "The deal has been updated successfully.",
         });
-        router.push('/deals');
+        router.push(`/deals/${id}`);
     }
   }
 

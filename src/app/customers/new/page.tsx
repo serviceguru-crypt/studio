@@ -38,12 +38,12 @@ export default function NewCustomerPage() {
   });
 
   function onSubmit(data: CustomerFormValues) {
-    addCustomer(data);
+    const newCustomer = addCustomer(data);
     toast({
       title: "Customer Created",
       description: "The new customer has been added successfully.",
     });
-    router.push('/customers');
+    router.push(`/customers/${newCustomer.id}`);
   }
 
   return (
