@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
                 <MetricCard title="Win Rate" value={`${winRate.toFixed(1)}%`} icon={<TrendingUp className="h-4 w-4" />} description="Ratio of deals won" />
-                <MetricCard title="Avg. Deal Value" value={`₦${avgDealValue.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} description="Average value of all deals" />
+                <MetricCard title="Avg. Deal Value" value={`₦${avgDealValue.toLocaleString()}`} icon={<Briefcase className="h-4 w-4" />} description="Average value of all deals" />
                 <MetricCard title="Deals Won" value={`${wonDeals.length}`} icon={<Briefcase className="h-4 w-4" />} description="Total deals closed successfully" />
                 <MetricCard title="Deals Lost" value={`${lostDeals.length}`} icon={<TrendingDown className="h-4 w-4" />} description="Total deals lost" />
             </div>
