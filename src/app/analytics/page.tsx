@@ -1,13 +1,14 @@
 
 "use client";
 
+import * as React from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { MetricCard } from '@/components/metric-card';
 import { LineChartCard } from '@/components/charts/line-chart-card';
 import { BarChartCard } from '@/components/charts/bar-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
-import { salesData, revenueData, leadsData, dealsData, recentSales, teamPerformance } from '@/lib/data';
+import { salesData, revenueData, leadsData, recentSales, teamPerformance, getDeals, Deal } from '@/lib/data';
 import { Users, DollarSign, Briefcase, TrendingUp, TrendingDown, CircleHelp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -19,6 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 
 const getBadgeVariant = (stage: string) => {
@@ -34,6 +36,12 @@ const getBadgeVariant = (stage: string) => {
     }
 }
 export default function AnalyticsPage() {
+    const [deals, setDeals] = React.useState<Deal[]>([]);
+
+    React.useEffect(() => {
+        setDeals(getDeals());
+    }, []);
+
     const metrics = {
         totalRevenue: 45231.89,
         subscriptions: 2350,
@@ -42,16 +50,37 @@ export default function AnalyticsPage() {
         salesData: salesData,
         revenueData: revenueData,
         leadsData: leadsData,
-        dealsData: dealsData,
         recentSales: recentSales,
         teamPerformance: teamPerformance
     };
     
+    if (deals.length === 0) {
+        return (
+             <DashboardLayout>
+                <div className="flex flex-col w-full">
+                <Header />
+                <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
+                     <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+                        <Skeleton className="h-[125px] w-full" />
+                        <Skeleton className="h-[125px] w-full" />
+                        <Skeleton className="h-[125px] w-full" />
+                        <Skeleton className="h-[125px] w-full" />
+                    </div>
+                     <div className="grid gap-4 md:gap-8 lg:grid-cols-2">
+                        <Skeleton className="h-[350px] w-full" />
+                        <Skeleton className="h-[350px] w-full" />
+                    </div>
+                </main>
+                </div>
+            </DashboardLayout>
+        )
+    }
+
     const totalLeads = metrics.leadsData.reduce((acc, item) => acc + item.count, 0);
-    const wonDeals = dealsData.filter(d => d.stage === 'Closed Won');
-    const lostDeals = dealsData.filter(d => d.stage === 'Closed Lost');
-    const winRate = wonDeals.length / (wonDeals.length + lostDeals.length) * 100;
-    const avgDealValue = dealsData.reduce((acc, deal) => acc + deal.value, 0) / dealsData.length;
+    const wonDeals = deals.filter(d => d.stage === 'Closed Won');
+    const lostDeals = deals.filter(d => d.stage === 'Closed Lost');
+    const winRate = (wonDeals.length > 0 || lostDeals.length > 0) ? (wonDeals.length / (wonDeals.length + lostDeals.length)) * 100 : 0;
+    const avgDealValue = deals.length > 0 ? deals.reduce((acc, deal) => acc + deal.value, 0) / deals.length : 0;
 
   return (
     <DashboardLayout>
@@ -86,7 +115,7 @@ export default function AnalyticsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {dealsData.map(deal => (
+                                {deals.map(deal => (
                                 <TableRow key={deal.id}>
                                     <TableCell className="font-medium">{deal.name}</TableCell>
                                     <TableCell>
@@ -129,7 +158,7 @@ export default function AnalyticsPage() {
                                     <p className="text-sm text-muted-foreground">Leads that fit criteria</p>
                                 </div>
                             </div>
-                            <p className="text-xl font-bold">{dealsData.filter(d => d.stage === 'Qualification').length}</p>
+                            <p className="text-xl font-bold">{deals.filter(d => d.stage === 'Qualification').length}</p>
                         </div>
                          <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                             <div className="flex items-center gap-3">
@@ -139,7 +168,7 @@ export default function AnalyticsPage() {
                                     <p className="text-sm text-muted-foreground">Deals in proposal stage</p>
                                 </div>
                             </div>
-                            <p className="text-xl font-bold">{dealsData.filter(d => d.stage === 'Proposal').length}</p>
+                            <p className="text-xl font-bold">{deals.filter(d => d.stage === 'Proposal').length}</p>
                         </div>
                          <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                             <div className="flex items-center gap-3">
