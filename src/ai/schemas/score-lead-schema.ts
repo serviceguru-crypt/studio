@@ -11,7 +11,7 @@ import { z } from 'genkit';
 
 export const ScoreLeadInputSchema = z.object({
   dealName: z.string().describe('The name or title of the deal.'),
-  organizationName: z.string().describe('The name of the organization or individual associated with the deal.'),
+  organizationName: z.string().describe('The name of the organization associated with the deal.'),
   dealValue: z.number().describe('The monetary value of the deal.'),
   stage: z.string().describe('The current stage of the deal in the sales pipeline (e.g., Qualification, Proposal).'),
 });

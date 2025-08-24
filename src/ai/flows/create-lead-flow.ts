@@ -15,7 +15,7 @@ import { addCustomer, Customer } from '@/lib/data';
 const CreateLeadInputSchema = z.object({
   name: z.string().describe("The full name of the lead."),
   email: z.string().email().describe("The email address of the lead."),
-  organization: z.string().describe("The organization or individual name the lead represents."),
+  organization: z.string().describe("The organization the lead represents."),
   phone: z.string().optional().describe("The phone number of the lead."),
 });
 export type CreateLeadInput = z.infer<typeof CreateLeadInputSchema>;

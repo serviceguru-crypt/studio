@@ -168,7 +168,7 @@ export default function CustomersPage() {
                             </TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="hidden md:table-cell">Organization/Individual</TableHead>
+                            <TableHead className="hidden md:table-cell">Organization</TableHead>
                             <TableHead className="hidden md:table-cell">
                             Email
                             </TableHead>

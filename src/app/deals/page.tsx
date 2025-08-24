@@ -240,7 +240,7 @@ export default function DealsPage() {
                             <TableHead>Deal Name</TableHead>
                             <TableHead>Stage</TableHead>
                              <TableHead className="hidden sm:table-cell">Lead Score</TableHead>
-                            <TableHead className="hidden md:table-cell">Organization/Individual</TableHead>
+                            <TableHead className="hidden md:table-cell">Organization</TableHead>
                             <TableHead className="text-right">Value</TableHead>
                             <TableHead>
                                 <span className="sr-only">Actions</span>

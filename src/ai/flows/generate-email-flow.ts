@@ -14,7 +14,7 @@ import { z } from 'genkit';
 
 const GenerateEmailInputSchema = z.object({
   customerName: z.string().describe('The name of the customer the email is being sent to.'),
-  organizationName: z.string().describe('The organization or individual the customer represents.'),
+  organizationName: z.string().describe('The organization the customer represents.'),
   emailTone: z.enum(['Formal', 'Friendly', 'Follow-up']).describe('The desired tone of the email.'),
   emailContent: z.string().describe('The key points or content to include in the email body.'),
 });

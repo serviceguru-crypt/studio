@@ -20,7 +20,7 @@ const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   phone: z.string().optional(),
-  organization: z.string().min(2, { message: "Organization/Individual name must be at least 2 characters." }),
+  organization: z.string().min(2, { message: "Organization name must be at least 2 characters." }),
 });
 
 type CustomerFormValues = z.infer<typeof customerFormSchema>;
@@ -104,7 +104,7 @@ export default function NewCustomerPage() {
                                 name="organization"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Organization/Individual</FormLabel>
+                                        <FormLabel>Organization</FormLabel>
                                         <FormControl>
                                             <Input placeholder="e.g. TechCo Nigeria" {...field} />
                                         </FormControl>
