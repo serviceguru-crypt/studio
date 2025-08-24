@@ -7,7 +7,6 @@ import { MetricCard } from '@/components/metric-card';
 import { LineChartCard } from '@/components/charts/line-chart-card';
 import { BarChartCard } from '@/components/charts/bar-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
-import { AiSummary } from '@/components/ai-summary';
 import { salesData, revenueData, leadsData, dealsData, recentSales, teamPerformance } from '@/lib/data';
 import { Users, DollarSign, Briefcase, TrendingUp, TrendingDown, CircleHelp } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
