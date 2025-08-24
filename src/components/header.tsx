@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import { Calendar as CalendarIcon, Download, Plus, Search, Check, Users } from "lucide-react";
+import { Calendar as CalendarIcon, LogOut, Plus, Search, Users } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { users, User } from "@/lib/data";
+import { User } from "@/lib/data";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   date?: DateRange;
@@ -32,30 +33,43 @@ interface HeaderProps {
 
 
 export function Header({ date, onDateChange }: HeaderProps) {
+  const router = useRouter();
   const [internalDate, setInternalDate] = React.useState<DateRange | undefined>({
     from: new Date(2024, 0, 20),
     to: addDays(new Date(2024, 0, 20), 30),
   });
 
-  const [currentUser, setCurrentUser] = React.useState<User>(users[0]);
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+  const [allUsers, setAllUsers] = React.useState<User[]>([]);
 
   React.useEffect(() => {
-    const userId = localStorage.getItem('currentUser') || users[0].id;
-    const user = users.find(u => u.id === userId) || users[0];
-    setCurrentUser(user);
-    if (!localStorage.getItem('currentUser')) {
-      localStorage.setItem('currentUser', user.id);
+    const userJson = localStorage.getItem('currentUser');
+    if (userJson) {
+      const user = JSON.parse(userJson);
+      setCurrentUser(user);
     }
+     const allUsersJson = localStorage.getItem('users');
+     if (allUsersJson) {
+        const allUsersParsed = JSON.parse(allUsersJson);
+        const currentUserOrgId = JSON.parse(userJson || '{}').organizationId;
+        setAllUsers(allUsersParsed.filter((u: User) => u.organizationId === currentUserOrgId));
+     }
+
   }, []);
 
   const handleUserChange = (userId: string) => {
-    const user = users.find(u => u.id === userId);
+    const user = allUsers.find(u => u.id === userId);
     if (user) {
-        localStorage.setItem('currentUser', userId);
+        localStorage.setItem('currentUser', JSON.stringify(user));
         setCurrentUser(user);
         // Force a reload to reflect the data changes for the new user
         window.location.reload();
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    router.push('/login');
   };
 
   const displayDate = date ?? internalDate;
@@ -127,7 +141,7 @@ export function Header({ date, onDateChange }: HeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        <DropdownMenu>
+        {currentUser && <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
@@ -146,23 +160,32 @@ export function Header({ date, onDateChange }: HeaderProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-               <DropdownMenuRadioGroup value={currentUser.id} onValueChange={handleUserChange}>
-                <DropdownMenuLabel>Switch User</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {users.map(user => (
-                  <DropdownMenuRadioItem key={user.id} value={user.id} className="flex items-center gap-2">
-                    <Users className="h-4 w-4"/>
-                    <span>{user.name} ({user.role})</span>
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>Profile</DropdownMenuItem>
+               {allUsers.length > 1 && (
+                  <>
+                    <DropdownMenuRadioGroup value={currentUser.id} onValueChange={handleUserChange}>
+                        <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {allUsers.map(user => (
+                        <DropdownMenuRadioItem key={user.id} value={user.id} className="flex items-center gap-2">
+                            <Users className="h-4 w-4"/>
+                            <span>{user.name} ({user.role})</span>
+                        </DropdownMenuRadioItem>
+                        ))}
+                    </DropdownMenuRadioGroup>
+                    <DropdownMenuSeparator />
+                  </>
+               )}
+              <DropdownMenuItem asChild>
+                  <Link href="/profile">Profile</Link>
+              </DropdownMenuItem>
               <DropdownMenuItem disabled>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem disabled>Log out</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
-          </DropdownMenu>
+          </DropdownMenu>}
       </div>
     </header>
   );

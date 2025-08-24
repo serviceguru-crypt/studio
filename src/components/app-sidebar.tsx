@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy, Calendar } from 'lucide-react';
+import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy, Calendar, Building } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -14,9 +14,11 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useEffect, useState } from 'react';
+import { getCompanyProfile } from '@/lib/data';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: Home },
+  { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/deals', label: 'Deals', icon: Briefcase },
   { href: '/analytics', label: 'Analytics', icon: BarChart },
@@ -25,13 +27,28 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const [companyName, setCompanyName] = useState('N-CRM');
+  const [companyLogo, setCompanyLogo] = useState('');
+
+  useEffect(() => {
+    const profile = getCompanyProfile();
+    if(profile) {
+        setCompanyName(profile.name);
+        setCompanyLogo(profile.logo);
+    }
+  }, []);
 
   return (
     <Sidebar>
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
-            <Briefcase className="w-8 h-8 text-primary" />
-            <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">N-CRM</span>
+            <Avatar className="h-8 w-8">
+                <AvatarImage src={companyLogo || undefined} alt={companyName} data-ai-hint="company logo"/>
+                <AvatarFallback>
+                    <Briefcase className="h-5 w-5 text-primary"/>
+                </AvatarFallback>
+            </Avatar>
+            <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">{companyName}</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="flex-1 p-2">
@@ -51,9 +68,11 @@ export function AppSidebar() {
       <SidebarFooter className="p-2">
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: "Support", side:"right"}}>
-                    <LifeBuoy/>
-                    <span>Support</span>
+                <SidebarMenuButton tooltip={{children: "Profile", side:"right"}} asChild>
+                    <Link href="/profile">
+                        <Building/>
+                        <span>Profile</span>
+                    </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

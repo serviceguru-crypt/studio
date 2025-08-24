@@ -7,8 +7,16 @@ export type User = {
     id: string;
     name: string;
     email: string;
+    password?: string; // Should be hashed in a real app
     role: Role;
     avatar: string;
+    organizationId: string;
+}
+
+export type CompanyProfile = {
+    id: string;
+    name: string;
+    logo: string;
 }
 
 export type Deal = {
@@ -43,10 +51,15 @@ export type Customer = {
 
 const today = new Date();
 
-export const users: User[] = [
-    { id: 'U001', name: 'Admin User', email: 'admin@n-crm.com', role: 'Admin', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'U002', name: 'Sales Rep Sally', email: 'sally@n-crm.com', role: 'Sales Rep', avatar: 'https://placehold.co/40x40.png' },
+export const initialUsers: User[] = [
+    { id: 'U001', name: 'Admin User', email: 'admin@n-crm.com', password: 'password', role: 'Admin', avatar: 'https://placehold.co/40x40.png', organizationId: 'O001' },
+    { id: 'U002', name: 'Sales Rep Sally', email: 'sally@n-crm.com', password: 'password', role: 'Sales Rep', avatar: 'https://placehold.co/40x40.png', organizationId: 'O001' },
 ];
+
+export const initialCompanyProfiles: CompanyProfile[] = [
+    { id: 'O001', name: 'N-CRM Inc.', logo: '' },
+];
+
 
 export const initialCustomersData: Customer[] = [
     { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', organization: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001' },
@@ -91,15 +104,6 @@ export const teamPerformance = [
     { name: 'Eve', deals: 5, value: 60000 },
 ];
 
-const getCurrentUser = (): User => {
-    if (typeof window === 'undefined') {
-        return users[0]; // Default to Admin user for server-side rendering
-    }
-    const userId = localStorage.getItem('currentUser');
-    return users.find(u => u.id === userId) || users[0];
-}
-
-
 const initializeData = <T>(key: string, initialData: T[]): T[] => {
     if (typeof window === 'undefined') {
         return initialData;
@@ -129,14 +133,85 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
 }
 
 // Initialize data sources
+let users = initializeData('users', initialUsers);
+let companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
 let customersData = initializeData('customers', initialCustomersData);
 let dealsDataStore = initializeData('deals', dealsData);
+
+export const registerUser = (data: {name: string, email: string, password: string, organizationName: string }) => {
+    users = initializeData('users', initialUsers);
+    companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
+
+    if (users.find(u => u.email === data.email)) {
+        throw new Error('An account with this email already exists.');
+    }
+
+    const newOrgId = `O${companyProfiles.length + 1}`;
+    const newCompanyProfile: CompanyProfile = {
+        id: newOrgId,
+        name: data.organizationName,
+        logo: '',
+    };
+    companyProfiles.push(newCompanyProfile);
+    localStorage.setItem('companyProfiles', JSON.stringify(companyProfiles));
+    
+    const newUser: User = {
+        id: `U${users.length + 1}`,
+        name: data.name,
+        email: data.email,
+        password: data.password, // In a real app, hash this!
+        role: 'Admin', // First user is always an admin
+        avatar: `https://placehold.co/40x40.png?text=${data.name.charAt(0)}`,
+        organizationId: newOrgId,
+    };
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+    return newUser;
+};
+
+export const loginUser = (email: string, password: string): User | null => {
+    users = initializeData('users', initialUsers);
+    const user = users.find(u => u.email === email && u.password === password);
+    if (user) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return user;
+    }
+    return null;
+};
+
+const getCurrentUser = (): User | null => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+    const userJson = localStorage.getItem('currentUser');
+    if (!userJson) return null;
+    return JSON.parse(userJson);
+}
+
+export const getCompanyProfile = (): CompanyProfile | null => {
+    const user = getCurrentUser();
+    if (!user) return null;
+    companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
+    return companyProfiles.find(p => p.id === user.organizationId) || null;
+}
+
+export const updateCompanyProfile = (profile: CompanyProfile) => {
+    companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
+    const index = companyProfiles.findIndex(p => p.id === profile.id);
+    if (index > -1) {
+        companyProfiles[index] = profile;
+        localStorage.setItem('companyProfiles', JSON.stringify(companyProfiles));
+    }
+}
 
 
 // Helper to get customers from local storage
 export const getCustomers = (): Customer[] => {
     customersData = initializeData('customers', initialCustomersData);
     const currentUser = getCurrentUser();
+    if (!currentUser) return [];
     if (currentUser.role === 'Admin') {
         return customersData;
     }
@@ -145,8 +220,10 @@ export const getCustomers = (): Customer[] => {
 
 // Helper to add a customer to local storage
 export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity' | 'ownerId'>) => {
-    getCustomers(); // Ensure customersData is fresh
+    customersData = initializeData('customers', initialCustomersData); // Ensure customersData is fresh
     const currentUser = getCurrentUser();
+    if (!currentUser) throw new Error("No logged in user");
+
     const newCustomer: Customer = {
         ...customer,
         id: `C${(customersData.length + 1).toString().padStart(3, '0')}`,
@@ -155,7 +232,7 @@ export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar' 
         activity: [],
         ownerId: currentUser.id,
     };
-    customersData = [...customersData, newCustomer];
+    customersData.push(newCustomer);
     localStorage.setItem('customers', JSON.stringify(customersData));
     return newCustomer;
 };
@@ -185,6 +262,7 @@ export const deleteCustomer = (id: string) => {
 export const getDeals = (): Deal[] => {
     dealsDataStore = initializeData('deals', dealsData);
     const currentUser = getCurrentUser();
+    if (!currentUser) return [];
     if (currentUser.role === 'Admin') {
         return dealsDataStore;
     }
@@ -193,14 +271,15 @@ export const getDeals = (): Deal[] => {
 
 // Helper to add a deal to local storage
 export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId'>) => {
-    getDeals(); // Ensure dealsDataStore is fresh
+    dealsDataStore = initializeData('deals', dealsData); // Ensure dealsDataStore is fresh
     const currentUser = getCurrentUser();
+     if (!currentUser) throw new Error("No logged in user");
     const newDeal: Deal = {
         ...deal,
         id: `D${(dealsDataStore.length + 1).toString().padStart(3, '0')}`,
         ownerId: currentUser.id,
     };
-    dealsDataStore = [...dealsDataStore, newDeal];
+    dealsDataStore.push(newDeal);
     localStorage.setItem('deals', JSON.stringify(dealsDataStore));
     return newDeal;
 };
@@ -244,3 +323,11 @@ export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 
     }
     return null;
 }
+
+export const leadsData = [
+  { name: 'Referral', count: 150, fill: 'var(--color-chart-1)' },
+  { name: 'Website', count: 120, fill: 'var(--color-chart-2)' },
+  { name: 'Social Media', count: 80, fill: 'var(--color-chart-3)' },
+  { name: 'Cold Call', count: 50, fill: 'var(--color-chart-4)' },
+  { name: 'Events', count: 30, fill: 'var(--color-chart-5)' },
+];
