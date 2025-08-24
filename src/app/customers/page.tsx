@@ -54,9 +54,11 @@ export default function CustomersPage() {
   const { toast } = useToast();
 
   React.useEffect(() => {
-    const userId = localStorage.getItem('currentUser');
-    const user = users.find(u => u.id === userId) || users[0];
-    setCurrentUser(user);
+    const userJson = localStorage.getItem('currentUser');
+    if (userJson) {
+      const user = JSON.parse(userJson);
+      setCurrentUser(user);
+    }
   }, []);
 
   const fetchCustomers = React.useCallback(() => {
