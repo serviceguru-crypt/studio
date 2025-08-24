@@ -36,6 +36,10 @@ export default function DealDetailsPage() {
         if (id) {
             const foundDeal = getDealById(id as string);
             if (foundDeal) {
+                // Ensure closeDate is a Date object
+                if (typeof foundDeal.closeDate === 'string') {
+                    foundDeal.closeDate = new Date(foundDeal.closeDate);
+                }
                 setDeal(foundDeal);
             } else {
                 // Handle case where deal is not found, maybe redirect or show a message
@@ -56,6 +60,8 @@ export default function DealDetailsPage() {
             </DashboardLayout>
         )
     }
+
+    const isValidDate = deal.closeDate && !isNaN(deal.closeDate.getTime());
 
     return (
         <DashboardLayout>
@@ -103,7 +109,7 @@ export default function DealDetailsPage() {
                             </div>
                             <div className="grid gap-1">
                                 <p className="text-sm font-medium text-muted-foreground">Expected Close Date</p>
-                                <p>{format(deal.closeDate, "PPP")}</p>
+                                <p>{isValidDate ? format(deal.closeDate, "PPP") : "Not set"}</p>
                             </div>
                         </CardContent>
                     </Card>
