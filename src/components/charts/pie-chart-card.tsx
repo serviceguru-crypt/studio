@@ -25,10 +25,10 @@ export function PieChartCard({ data }: PieChartCardProps) {
             <CardContent>
                 <ChartContainer config={chartConfig} className="mx-auto w-full aspect-square max-h-[300px]">
                     <PieChart>
-                        <Tooltip content={<ChartTooltipContent />} />
+                        <Tooltip content={<ChartTooltipContent nameKey="name" />} />
                         <Pie data={chartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                            {chartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                            {chartData.map((entry) => (
+                                <Cell key={`cell-${entry.name}`} fill={`var(--color-${entry.name.toLowerCase().replace(/ /g, '')})`} />
                             ))}
                         </Pie>
                         <Legend />
