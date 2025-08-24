@@ -256,7 +256,7 @@ export default function CustomerDetailsPage() {
                     isOpen={isComposerOpen}
                     onOpenChange={setIsComposerOpen}
                     customerName={customer.name}
-                    organizationName={customer.organization}
+                    organization={customer.organization}
                 />
             )}
         </DashboardLayout>
