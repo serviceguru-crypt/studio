@@ -43,11 +43,17 @@ export default function Home() {
   useEffect(() => {
     fetchData();
 
+    const handleStorageChange = () => {
+      fetchData();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
     // Add event listener to refetch data when the window gets focus
     window.addEventListener('focus', fetchData);
 
     // Cleanup the event listener when the component unmounts
     return () => {
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('focus', fetchData);
     };
   }, [fetchData]);
