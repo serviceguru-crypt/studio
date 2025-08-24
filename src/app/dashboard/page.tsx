@@ -41,15 +41,6 @@ export default function DashboardPage() {
     const customers = data.getCustomers();
     setAllDeals(deals);
     setCustomers(customers);
-    setMetrics({
-      totalRevenue: 45231.89, // This could be dynamic later
-      subscriptions: 2350,
-      sales: 12234,
-      activeNow: 573,
-      leadsData: data.leadsData,
-      recentSales: data.recentSales,
-      teamPerformance: data.teamPerformance
-    });
   }, []);
 
   useEffect(() => {
@@ -97,6 +88,43 @@ export default function DashboardPage() {
     }
   }, [date, allDeals]);
   
+  useEffect(() => {
+      if(allDeals.length > 0 && customers.length > 0) {
+        const customersById = new Map(customers.map(c => [c.id, c]));
+        const totalLeads = Array.isArray(data.leadsData) ? data.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
+        const activeDealsCount = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
+        const totalRevenue = filteredDeals
+          .filter(d => d.stage === 'Closed Won')
+          .reduce((acc, d) => acc + d.value, 0);
+        const totalSales = filteredDeals
+          .filter(d => d.stage === 'Closed Won').length;
+
+        const recentSalesData = filteredDeals
+          .filter(deal => deal.stage === 'Closed Won')
+          .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
+          .slice(0, 5)
+          .map(deal => {
+            const customer = customersById.get(deal.customerId);
+            return {
+              name: customer?.name || 'Unknown Customer',
+              email: customer?.email || '',
+              amount: deal.value,
+              avatar: customer?.avatar || `https://placehold.co/40x40.png`,
+            }
+          });
+
+        setMetrics({
+          totalRevenue,
+          totalSales,
+          totalLeads,
+          activeDealsCount,
+          leadsBySource: data.leadsData,
+          dealsData: filteredDeals,
+          recentSales: recentSalesData,
+        });
+      }
+  }, [filteredDeals, customers, allDeals]);
+  
   if (!metrics) {
     return (
       <DashboardLayout>
@@ -123,51 +151,28 @@ export default function DashboardPage() {
     )
   }
 
-  const customersById = new Map(customers.map(c => [c.id, c]));
-  const totalLeads = Array.isArray(metrics.leadsData) ? metrics.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
-  const activeDealsCount = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
-  const totalRevenue = filteredDeals
-    .filter(d => d.stage === 'Closed Won')
-    .reduce((acc, d) => acc + d.value, 0);
-  const totalSales = filteredDeals
-    .filter(d => d.stage === 'Closed Won').length;
-
-  const recentSalesData = filteredDeals
-    .filter(deal => deal.stage === 'Closed Won')
-    .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
-    .slice(0, 5)
-    .map(deal => {
-      const customer = customersById.get(deal.customerId);
-      return {
-        name: customer?.name || 'Unknown Customer',
-        email: customer?.email || '',
-        amount: deal.value,
-        avatar: customer?.avatar || `https://placehold.co/40x40.png`,
-      }
-    });
-
   return (
     <DashboardLayout>
       <div className="flex flex-col w-full">
         <Header date={date} onDateChange={setDate} />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
           <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-            <MetricCard title="Total Revenue" value={`₦${totalRevenue.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} description="Revenue from won deals" />
-            <MetricCard title="Sales" value={`+${totalSales.toLocaleString()}`} icon={<ShoppingCart className="h-4 w-4" />} description="Deals won in period" />
-            <MetricCard title="New Leads" value={`+${totalLeads.toLocaleString()}`} icon={<Users className="h-4 w-4" />} description="All leads acquired" />
-            <MetricCard title="Active Deals" value={`${activeDealsCount}`} icon={<Briefcase className="h-4 w-4" />} description="Deals not yet closed" />
+            <MetricCard title="Total Revenue" value={`₦${metrics.totalRevenue.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} description="Revenue from won deals" />
+            <MetricCard title="Sales" value={`+${metrics.totalSales.toLocaleString()}`} icon={<ShoppingCart className="h-4 w-4" />} description="Deals won in period" />
+            <MetricCard title="New Leads" value={`+${metrics.totalLeads.toLocaleString()}`} icon={<Users className="h-4 w-4" />} description="All leads acquired" />
+            <MetricCard title="Active Deals" value={`${metrics.activeDealsCount}`} icon={<Briefcase className="h-4 w-4" />} description="Deals not yet closed" />
           </div>
           <div className="grid gap-4 md:gap-8 lg:grid-cols-7">
             <div className="col-span-full lg:col-span-4">
                <LineChartCard data={salesChartData} />
             </div>
             <div className="col-span-full lg:col-span-3">
-               <AiSummary metrics={{...metrics, dealsData: filteredDeals}} />
+               <AiSummary metrics={metrics} />
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8">
-              <PieChartCard data={metrics.leadsData} />
-              <RecentSales data={recentSalesData} totalSales={totalSales} />
+              <PieChartCard data={metrics.leadsBySource} />
+              <RecentSales data={metrics.recentSales} totalSales={metrics.totalSales} />
           </div>
         </main>
       </div>
