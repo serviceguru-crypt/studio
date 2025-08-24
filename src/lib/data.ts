@@ -38,6 +38,12 @@ export type Deal = {
     justification?: string;
 }
 
+export type Activity = {
+    id: string;
+    date: Date;
+    type: 'Email' | 'Call' | 'Meeting' | 'Note';
+    notes: string;
+}
 export type Customer = {
     id: string;
     name: string;
@@ -46,21 +52,22 @@ export type Customer = {
     organization: string;
     status: 'Active' | 'Inactive';
     avatar: string;
+    activity: Activity[];
 }
 
 const today = new Date();
 
 export const initialCustomersData: Customer[] = [
-    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', organization: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', organization: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', organization: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', organization: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', organization: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', organization: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', organization: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', organization: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', organization: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', organization: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', organization: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', organization: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', organization: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', organization: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', organization: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', organization: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', organization: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', organization: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', organization: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [] },
+    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', organization: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [] },
 ];
 
 let dealsData: Deal[] = [
@@ -105,6 +112,9 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
                 if (key === 'closeDate' && typeof value === 'string') {
                     return new Date(value);
                 }
+                if (key === 'date' && typeof value === 'string') {
+                    return new Date(value);
+                }
                 return value;
             });
             if (Array.isArray(parsedData) && parsedData.length > 0) {
@@ -131,13 +141,14 @@ export const getCustomers = (): Customer[] => {
 };
 
 // Helper to add a customer to local storage
-export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar'>) => {
+export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity'>) => {
     getCustomers(); // Ensure customersData is fresh
     const newCustomer: Customer = {
         ...customer,
         id: `C${(customersData.length + 1).toString().padStart(3, '0')}`,
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
+        activity: [],
     };
     customersData = [...customersData, newCustomer];
     localStorage.setItem('customers', JSON.stringify(customersData));
@@ -203,3 +214,22 @@ export const deleteDeal = (id: string) => {
     deals = deals.filter(deal => deal.id !== id);
     localStorage.setItem('deals', JSON.stringify(deals));
 };
+
+export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 'date'>) => {
+    const customers = getCustomers();
+    const customerIndex = customers.findIndex(c => c.id === customerId);
+    if (customerIndex > -1) {
+        const newActivity: Activity = {
+            ...activity,
+            id: `A${Date.now()}`,
+            date: new Date(),
+        };
+        if (!customers[customerIndex].activity) {
+            customers[customerIndex].activity = [];
+        }
+        customers[customerIndex].activity.push(newActivity);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        return customers[customerIndex];
+    }
+    return null;
+}
