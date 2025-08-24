@@ -41,7 +41,7 @@ const summarizeDashboardInsightsPrompt = ai.definePrompt({
   output: {schema: SummarizeDashboardInsightsOutputSchema},
   prompt: `You are an expert business analyst reviewing a CRM dashboard.
 
-  Your goal is to summarize the key insights from the data provided. Focus on the most important trends and information that a user should notice.  If there are no significant trends, state there are no significant trends.
+  Your goal is to summarize the key insights from the data provided. All monetary values are in Nigerian Naira (NGN), so use the '₦' symbol for currency. Focus on the most important trends and information that a user should notice.  If there are no significant trends, state there are no significant trends.
 
   Data: {{{metricsData}}}`,
 });
