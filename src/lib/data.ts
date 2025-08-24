@@ -1,5 +1,6 @@
 
 
+
 export const salesData = [
   { name: 'Jan', sales: 4000 },
   { name: 'Feb', sales: 3000 },
@@ -32,6 +33,8 @@ export type Deal = {
     stage: 'Qualification' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost';
     value: number;
     company: string;
+    leadScore?: 'Hot' | 'Warm' | 'Cold';
+    justification?: string;
 }
 
 let dealsData: Deal[] = [

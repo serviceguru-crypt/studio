@@ -38,7 +38,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getDeals, deleteDeal, Deal } from '@/lib/data';
+import { getDeals, deleteDeal, Deal, updateDeal } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { exportToCsv } from '@/lib/utils';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
@@ -47,8 +47,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from "@/hooks/use-toast";
 
 type DealWithScore = Deal & { 
-    leadScore?: 'Hot' | 'Warm' | 'Cold';
-    justification?: string;
     isScoring?: boolean;
 };
 
@@ -87,15 +85,16 @@ export default function DealsPage() {
   const [dealToDelete, setDealToDelete] = React.useState<string | null>(null);
   const { toast } = useToast();
 
-  const fetchDeals = () => {
-    const deals = getDeals().map(d => ({ ...d, isScoring: !d.leadScore, leadScore: undefined, justification: undefined }));
-    setAllDeals(deals);
-    deals.forEach(deal => {
-      if (!deal.leadScore) {
-        scoreDealAndupdateState(deal);
-      }
+  const fetchDeals = React.useCallback(() => {
+    const dealsFromDb = getDeals();
+    const dealsToScore = dealsFromDb.filter(d => !d.leadScore);
+    
+    setAllDeals(dealsFromDb.map(d => ({ ...d, isScoring: !d.leadScore })));
+
+    dealsToScore.forEach(deal => {
+      scoreDealAndupdateState(deal);
     });
-  }
+  }, []);
 
   const scoreDealAndupdateState = async (dealToScore: DealWithScore) => {
     try {
@@ -105,6 +104,8 @@ export default function DealsPage() {
             dealValue: dealToScore.value,
             stage: dealToScore.stage,
         });
+
+        updateDeal(dealToScore.id, { leadScore: result.leadScore, justification: result.justification });
         
         setAllDeals(prevDeals => 
             prevDeals.map(d => 
@@ -122,7 +123,7 @@ export default function DealsPage() {
 
   React.useEffect(() => {
     fetchDeals();
-  }, []);
+  }, [fetchDeals]);
 
   const filterDeals = React.useCallback((tab: string, term: string) => {
     let deals = [...allDeals];
