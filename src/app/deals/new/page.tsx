@@ -48,7 +48,6 @@ export default function NewDealPage() {
       name: "",
       value: 0,
       stage: "Qualification",
-      closeDate: new Date(),
     },
   });
 

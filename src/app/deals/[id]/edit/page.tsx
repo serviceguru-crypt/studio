@@ -58,7 +58,7 @@ export default function EditDealPage() {
             form.reset({
               ...deal,
               value: deal.value || 0,
-              closeDate: deal.closeDate,
+              closeDate: deal.closeDate ? new Date(deal.closeDate) : new Date(),
             });
         } else {
             router.push('/deals');
@@ -206,7 +206,7 @@ export default function EditDealPage() {
                 </CardContent>
                 <CardFooter className="flex justify-end gap-2">
                   <Button variant="outline" asChild>
-                    <Link href="/deals">Cancel</Link>
+                    <Link href={`/deals/${id}`}>Cancel</Link>
                   </Button>
                   <Button type="submit">Save Changes</Button>
                 </CardFooter>

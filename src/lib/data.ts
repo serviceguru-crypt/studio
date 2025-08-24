@@ -21,7 +21,7 @@ export type CompanyProfile = {
 
 export type Deal = {
     id: string;
-    name: string;
+    name:string;
     stage: 'Qualification' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost';
     value: number;
     customerId: string;
@@ -29,6 +29,7 @@ export type Deal = {
     closeDate: Date;
     leadScore?: 'Hot' | 'Warm' | 'Cold';
     justification?: string;
+    organizationId: string;
 }
 
 export type Activity = {
@@ -47,6 +48,7 @@ export type Customer = {
     avatar: string;
     activity: Activity[];
     ownerId: string;
+    organizationId: string;
 }
 
 const today = new Date();
@@ -62,29 +64,29 @@ export const initialCompanyProfiles: CompanyProfile[] = [
 
 
 export const initialCustomersData: Customer[] = [
-    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', organization: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001' },
-    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', organization: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002' },
-    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', organization: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001' },
-    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', organization: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002' },
-    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', organization: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001' },
-    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', organization: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002' },
-    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', organization: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001' },
-    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', organization: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002' },
-    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', organization: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001' },
-    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', organization: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002' },
+    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', organization: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
+    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', organization: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
+    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', organization: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
+    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', organization: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
+    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', organization: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
+    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', organization: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
+    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', organization: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
+    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', organization: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
+    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', organization: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
+    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', organization: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
 ];
 
 let dealsData: Deal[] = [
-    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, customerId: 'C003', ownerId: 'U001', closeDate: addDays(today, 10) },
-    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, customerId: 'C002', ownerId: 'U002', closeDate: addDays(today, 25) },
-    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, customerId: 'C001', ownerId: 'U001', closeDate: addDays(today, -5) },
-    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, customerId: 'C005', ownerId: 'U001', closeDate: addDays(today, 45) },
-    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, customerId: 'C004', ownerId: 'U002', closeDate: addDays(today, 15) },
-    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, customerId: 'C006', ownerId: 'U002', closeDate: addDays(today, -2) },
-    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, customerId: 'C007', ownerId: 'U001', closeDate: addDays(today, 30) },
-    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, customerId: 'C009', ownerId: 'U001', closeDate: addDays(today, -1) },
-    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, customerId: 'C010', ownerId: 'U002', closeDate: addDays(today, 60) },
-    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, customerId: 'C008', ownerId: 'U002', closeDate: addDays(today, 20) },
+    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, customerId: 'C003', ownerId: 'U001', closeDate: addDays(today, 10), organizationId: 'O001' },
+    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, customerId: 'C002', ownerId: 'U002', closeDate: addDays(today, 25), organizationId: 'O001' },
+    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, customerId: 'C001', ownerId: 'U001', closeDate: addDays(today, -5), organizationId: 'O001' },
+    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, customerId: 'C005', ownerId: 'U001', closeDate: addDays(today, 45), organizationId: 'O001' },
+    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, customerId: 'C004', ownerId: 'U002', closeDate: addDays(today, 15), organizationId: 'O001' },
+    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, customerId: 'C006', ownerId: 'U002', closeDate: addDays(today, -2), organizationId: 'O001' },
+    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, customerId: 'C007', ownerId: 'U001', closeDate: addDays(today, 30), organizationId: 'O001' },
+    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, customerId: 'C009', ownerId: 'U001', closeDate: addDays(today, -1), organizationId: 'O001' },
+    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, customerId: 'C010', ownerId: 'U002', closeDate: addDays(today, 60), organizationId: 'O001' },
+    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, customerId: 'C008', ownerId: 'U002', closeDate: addDays(today, 20), organizationId: 'O001' },
 ];
 
 
@@ -146,7 +148,7 @@ export const registerUser = (data: {name: string, email: string, password: strin
         throw new Error('An account with this email already exists.');
     }
 
-    const newOrgId = `O${companyProfiles.length + 1}`;
+    const newOrgId = `O${Date.now()}`;
     const newCompanyProfile: CompanyProfile = {
         id: newOrgId,
         name: data.organizationName,
@@ -156,7 +158,7 @@ export const registerUser = (data: {name: string, email: string, password: strin
     localStorage.setItem('companyProfiles', JSON.stringify(companyProfiles));
     
     const newUser: User = {
-        id: `U${users.length + 1}`,
+        id: `U${Date.now()}`,
         name: data.name,
         email: data.email,
         password: data.password, // In a real app, hash this!
@@ -212,25 +214,29 @@ export const getCustomers = (): Customer[] => {
     customersData = initializeData('customers', initialCustomersData);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
+
+    const orgCustomers = customersData.filter(c => c.organizationId === currentUser.organizationId);
+
     if (currentUser.role === 'Admin') {
-        return customersData;
+        return orgCustomers;
     }
-    return customersData.filter(c => c.ownerId === currentUser.id);
+    return orgCustomers.filter(c => c.ownerId === currentUser.id);
 };
 
 // Helper to add a customer to local storage
-export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity' | 'ownerId'>) => {
+export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity' | 'ownerId' | 'organizationId'>) => {
     customersData = initializeData('customers', initialCustomersData); // Ensure customersData is fresh
     const currentUser = getCurrentUser();
     if (!currentUser) throw new Error("No logged in user");
 
     const newCustomer: Customer = {
         ...customer,
-        id: `C${(customersData.length + 1).toString().padStart(3, '0')}`,
+        id: `C${Date.now()}`,
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
         activity: [],
         ownerId: currentUser.id,
+        organizationId: currentUser.organizationId,
     };
     customersData.push(newCustomer);
     localStorage.setItem('customers', JSON.stringify(customersData));
@@ -263,21 +269,25 @@ export const getDeals = (): Deal[] => {
     dealsDataStore = initializeData('deals', dealsData);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
+    
+    const orgDeals = dealsDataStore.filter(d => d.organizationId === currentUser.organizationId);
+
     if (currentUser.role === 'Admin') {
-        return dealsDataStore;
+        return orgDeals;
     }
-    return dealsDataStore.filter(d => d.ownerId === currentUser.id);
+    return orgDeals.filter(d => d.ownerId === currentUser.id);
 };
 
 // Helper to add a deal to local storage
-export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId'>) => {
+export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) => {
     dealsDataStore = initializeData('deals', dealsData); // Ensure dealsDataStore is fresh
     const currentUser = getCurrentUser();
      if (!currentUser) throw new Error("No logged in user");
     const newDeal: Deal = {
         ...deal,
-        id: `D${(dealsDataStore.length + 1).toString().padStart(3, '0')}`,
+        id: `D${Date.now()}`,
         ownerId: currentUser.id,
+        organizationId: currentUser.organizationId,
     };
     dealsDataStore.push(newDeal);
     localStorage.setItem('deals', JSON.stringify(dealsDataStore));
