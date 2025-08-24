@@ -41,6 +41,10 @@ export default function EditDealPage() {
 
   const form = useForm<DealFormValues>({
     resolver: zodResolver(dealFormSchema),
+    defaultValues: {
+      name: '',
+      value: 0,
+    }
   });
 
   useEffect(() => {
