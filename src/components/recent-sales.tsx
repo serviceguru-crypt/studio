@@ -28,7 +28,7 @@ export function RecentSales({ data }: RecentSalesProps) {
                             <p className="text-sm font-medium leading-none">{sale.name}</p>
                             <p className="text-sm text-muted-foreground">{sale.email}</p>
                         </div>
-                        <div className="font-medium">+${sale.amount.toFixed(2)}</div>
+                        <div className="font-medium">+₦{sale.amount.toFixed(2)}</div>
                     </div>
                 ))}
             </CardContent>

@@ -15,10 +15,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const navItems = [
-  { href: '#', label: 'Dashboard', icon: Home },
-  { href: '#', label: 'Customers', icon: Users },
-  { href: '#', label: 'Deals', icon: Briefcase },
-  { href: '#', label: 'Analytics', icon: BarChart },
+  { href: '/', label: 'Dashboard', icon: Home },
+  { href: '/customers', label: 'Customers', icon: Users },
+  { href: '/deals', label: 'Deals', icon: Briefcase },
+  { href: '/analytics', label: 'Analytics', icon: BarChart },
 ];
 
 export function AppSidebar() {

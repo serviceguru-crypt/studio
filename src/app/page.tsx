@@ -31,7 +31,7 @@ export default function Home() {
         <Header />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
           <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-            <MetricCard title="Total Revenue" value={`$${metrics.totalRevenue.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} description="+20.1% from last month" />
+            <MetricCard title="Total Revenue" value={`₦${metrics.totalRevenue.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} description="+20.1% from last month" />
             <MetricCard title="Sales" value={`+${metrics.sales.toLocaleString()}`} icon={<ShoppingCart className="h-4 w-4" />} description="+180.1% from last month" />
             <MetricCard title="New Leads" value={`+${totalLeads.toLocaleString()}`} icon={<Users className="h-4 w-4" />} description="+19% from last month" />
             <MetricCard title="Active Deals" value={`${metrics.dealsData.length}`} icon={<Briefcase className="h-4 w-4" />} description="2 closing this month" />

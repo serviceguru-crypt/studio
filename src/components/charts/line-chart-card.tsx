@@ -35,7 +35,7 @@ export function LineChartCard({ data }: LineChartCardProps) {
             >
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="name" tickLine={false} axisLine={false} tickMargin={8} />
-              <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `$${value / 1000}k`} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `₦${value / 1000}k`} />
               <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
               <Line dataKey="sales" type="monotone" stroke="var(--color-sales)" strokeWidth={2} dot={true} />
             </LineChart>
