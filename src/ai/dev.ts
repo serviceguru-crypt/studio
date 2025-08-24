@@ -2,3 +2,4 @@ import { config } from 'dotenv';
 config();
 
 import '@/ai/flows/summarize-dashboard-insights.ts';
+import '@/ai/flows/score-lead-flow.ts';
