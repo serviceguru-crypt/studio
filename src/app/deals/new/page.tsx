@@ -100,7 +100,9 @@ export default function NewDealPage() {
                           </FormControl>
                           <SelectContent>
                             {customers.map(customer => (
-                                <SelectItem key={customer.id} value={customer.id}>{customer.organization}</SelectItem>
+                                <SelectItem key={customer.id} value={customer.id}>
+                                    {customer.name} ({customer.organization})
+                                </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
