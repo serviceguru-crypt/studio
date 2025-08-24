@@ -9,9 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { getCustomerById, Customer } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Mail, Phone, Building } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, Building, MessageSquarePlus } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { EmailComposer } from '@/components/email-composer';
 
 
 export default function CustomerDetailsPage() {
@@ -19,6 +20,7 @@ export default function CustomerDetailsPage() {
     const params = useParams();
     const { id } = params;
     const [customer, setCustomer] = useState<Customer | null>(null);
+    const [isComposerOpen, setIsComposerOpen] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -63,6 +65,10 @@ export default function CustomerDetailsPage() {
                              <p className="text-sm text-muted-foreground">{customer.company}</p>
                         </div>
                         <div className="hidden items-center gap-2 md:ml-auto md:flex">
+                             <Button variant="outline" size="sm" onClick={() => setIsComposerOpen(true)}>
+                                <MessageSquarePlus className="h-4 w-4 mr-2" />
+                                Compose AI Email
+                            </Button>
                              <Button asChild size="sm">
                                 <Link href={`/customers/${customer.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-2" />
@@ -108,6 +114,14 @@ export default function CustomerDetailsPage() {
                     </Card>
                 </main>
             </div>
+             {customer && (
+                <EmailComposer 
+                    isOpen={isComposerOpen}
+                    onOpenChange={setIsComposerOpen}
+                    customerName={customer.name}
+                    customerCompany={customer.company}
+                />
+            )}
         </DashboardLayout>
     );
 }
