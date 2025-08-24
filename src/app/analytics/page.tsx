@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { addDays, isWithinInterval } from 'date-fns';
+import { addDays, isWithinInterval, format, startOfMonth } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
@@ -42,6 +42,7 @@ const getBadgeVariant = (stage: string) => {
 export default function AnalyticsPage() {
     const [allDeals, setAllDeals] = React.useState<Deal[]>([]);
     const [filteredDeals, setFilteredDeals] = React.useState<Deal[]>([]);
+    const [salesChartData, setSalesChartData] = React.useState<{ name: string; sales: number }[]>([]);
     const [date, setDate] = React.useState<DateRange | undefined>({
       from: addDays(new Date(), -90),
       to: new Date(),
@@ -56,11 +57,26 @@ export default function AnalyticsPage() {
     React.useEffect(() => {
         if (date?.from && date?.to) {
             const filtered = allDeals.filter(deal => 
-                isWithinInterval(deal.closeDate, { start: date.from!, end: date.to! })
+                deal.closeDate && isWithinInterval(deal.closeDate, { start: date.from!, end: date.to! })
             );
             setFilteredDeals(filtered);
+
+            const wonDeals = filtered.filter(d => d.stage === 'Closed Won');
+            const monthlySales = wonDeals.reduce((acc, deal) => {
+                const month = format(startOfMonth(deal.closeDate), 'MMM yyyy');
+                acc[month] = (acc[month] || 0) + deal.value;
+                return acc;
+            }, {} as Record<string, number>);
+
+            const chartData = Object.entries(monthlySales)
+                .map(([name, sales]) => ({ name, sales }))
+                .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+            
+            setSalesChartData(chartData);
+
         } else {
             setFilteredDeals(allDeals);
+            setSalesChartData([]);
         }
     }, [date, allDeals]);
 
@@ -131,7 +147,7 @@ export default function AnalyticsPage() {
             </div>
 
             <div className="grid gap-4 md:gap-8 lg:grid-cols-2">
-                 <LineChartCard data={metrics.salesData} />
+                 <LineChartCard data={salesChartData} />
                  <PieChartCard data={metrics.leadsData} />
             </div>
 
