@@ -19,6 +19,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MoreHorizontal, File, PlusCircle, ListFilter } from 'lucide-react';
 
@@ -27,22 +37,29 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getCustomers, Customer } from '@/lib/data';
+import { getCustomers, deleteCustomer, Customer } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { exportToCsv } from '@/lib/utils';
+import { useToast } from "@/hooks/use-toast";
 
 export default function CustomersPage() {
   const [allCustomers, setAllCustomers] = React.useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [customerToDelete, setCustomerToDelete] = React.useState<string | null>(null);
+  const { toast } = useToast();
 
-  React.useEffect(() => {
+  const fetchCustomers = () => {
     const customers = getCustomers();
     setAllCustomers(customers);
     setFilteredCustomers(customers);
+  }
+
+  React.useEffect(() => {
+    fetchCustomers();
   }, []);
 
   const filterCustomers = React.useCallback((tab: string, term: string) => {
@@ -65,21 +82,35 @@ export default function CustomersPage() {
     setFilteredCustomers(customers);
   }, [allCustomers]);
 
+   React.useEffect(() => {
+    filterCustomers(activeTab, searchTerm);
+  }, [allCustomers, activeTab, searchTerm, filterCustomers]);
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    filterCustomers(value, searchTerm);
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value;
     setSearchTerm(term);
-    filterCustomers(activeTab, term);
   };
   
   const handleExport = () => {
     const dataToExport = filteredCustomers.map(({ id, avatar, ...rest }) => rest);
     exportToCsv('customers.csv', dataToExport);
   }
+
+  const handleDelete = () => {
+    if (customerToDelete) {
+        deleteCustomer(customerToDelete);
+        toast({
+            title: "Customer Deleted",
+            description: "The customer has been successfully deleted.",
+        });
+        setCustomerToDelete(null);
+        fetchCustomers(); // Re-fetch to update the list
+    }
+  };
 
 
   return (
@@ -95,22 +126,6 @@ export default function CustomersPage() {
                 <TabsTrigger value="inactive">Inactive</TabsTrigger>
               </TabsList>
               <div className="ml-auto flex items-center gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 gap-1">
-                      <ListFilter className="h-3.5 w-3.5" />
-                      <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                        Filter
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>Status</DropdownMenuItem>
-                    <DropdownMenuItem>Company</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
                 <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
                   <File className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
@@ -189,10 +204,14 @@ export default function CustomersPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/customers/${customer.id}/edit`}>Edit</Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/customers/${customer.id}`}>View Details</Link>
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => setCustomerToDelete(customer.id)}>Delete</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 </TableCell>
@@ -211,6 +230,22 @@ export default function CustomersPage() {
           </Tabs>
         </main>
       </div>
+
+        <AlertDialog open={!!customerToDelete} onOpenChange={(open) => !open && setCustomerToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the customer and all associated data.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setCustomerToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
     </DashboardLayout>
   );
 }

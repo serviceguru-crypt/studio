@@ -143,6 +143,27 @@ export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar'>
     return newCustomer;
 };
 
+export const getCustomerById = (id: string): Customer | undefined => {
+    return getCustomers().find(customer => customer.id === id);
+}
+
+export const updateCustomer = (id: string, updatedData: Partial<Omit<Customer, 'id' | 'avatar'>>) => {
+    const customers = getCustomers();
+    const customerIndex = customers.findIndex(customer => customer.id === id);
+    if (customerIndex > -1) {
+        customers[customerIndex] = { ...customers[customerIndex], ...updatedData };
+        localStorage.setItem('customers', JSON.stringify(customers));
+        return customers[customerIndex];
+    }
+    return null;
+};
+
+export const deleteCustomer = (id: string) => {
+    let customers = getCustomers();
+    customers = customers.filter(customer => customer.id !== id);
+    localStorage.setItem('customers', JSON.stringify(customers));
+};
+
 // Helper to get deals from local storage
 export const getDeals = (): Deal[] => {
     dealsDataStore = initializeData('deals', dealsData);
