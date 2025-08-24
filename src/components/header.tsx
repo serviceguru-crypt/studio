@@ -75,7 +75,7 @@ export function Header() {
             />
           </PopoverContent>
         </Popover>
-        <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+        <Button variant="outline" size="sm" className="hidden sm:inline-flex" disabled>
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>

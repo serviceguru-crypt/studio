@@ -31,6 +31,7 @@ import { getCustomers, Customer } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { exportToCsv } from '@/lib/utils';
 
 export default function CustomersPage() {
   const [allCustomers, setAllCustomers] = React.useState<Customer[]>([]);
@@ -74,6 +75,11 @@ export default function CustomersPage() {
     setSearchTerm(term);
     filterCustomers(activeTab, term);
   };
+  
+  const handleExport = () => {
+    const dataToExport = filteredCustomers.map(({ id, avatar, ...rest }) => rest);
+    exportToCsv('customers.csv', dataToExport);
+  }
 
 
   return (
@@ -105,7 +111,7 @@ export default function CustomersPage() {
                     <DropdownMenuItem>Company</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button size="sm" variant="outline" className="h-8 gap-1">
+                <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
                   <File className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     Export

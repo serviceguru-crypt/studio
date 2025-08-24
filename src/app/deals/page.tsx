@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getDeals, Deal } from '@/lib/data';
 import { Input } from '@/components/ui/input';
+import { exportToCsv } from '@/lib/utils';
 
 const getBadgeVariant = (stage: string) => {
     switch (stage.toLowerCase()) {
@@ -85,6 +86,11 @@ export default function DealsPage() {
     setSearchTerm(term);
     filterDeals(activeTab, term);
   };
+  
+  const handleExport = () => {
+    const dataToExport = filteredDeals.map(({ id, ...rest }) => rest);
+    exportToCsv('deals.csv', dataToExport);
+  }
 
   return (
     <DashboardLayout>
@@ -102,7 +108,7 @@ export default function DealsPage() {
                 <TabsTrigger value="closedlost">Closed Lost</TabsTrigger>
               </TabsList>
               <div className="ml-auto flex items-center gap-2">
-                <Button size="sm" variant="outline" className="h-8 gap-1">
+                <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
                   <File className="h-3.5 w-3.5" />
                   <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
                     Export
