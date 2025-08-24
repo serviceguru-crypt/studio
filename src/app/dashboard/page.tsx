@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { MetricCard } from '@/components/metric-card';
@@ -19,11 +19,9 @@ import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [metrics, setMetrics] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [allDeals, setAllDeals] = useState<Deal[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
-  const [salesChartData, setSalesChartData] = useState<{ name: string; sales: number }[]>([]);
   const [date, setDate] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
@@ -37,91 +35,76 @@ export default function DashboardPage() {
   }, [router]);
 
   const fetchData = useCallback(() => {
+    setIsLoading(true);
     const deals = data.getDeals();
     const customers = data.getCustomers();
     setAllDeals(deals);
     setCustomers(customers);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
     fetchData();
-
-    const handleStorageChange = () => {
-      fetchData();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('focus', fetchData);
-
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('focus', fetchData);
     };
   }, [fetchData]);
-
-
-  useEffect(() => {
-    if (date?.from && date?.to) {
-        const filtered = allDeals.filter(deal => 
-            deal.closeDate && isWithinInterval(deal.closeDate, { start: date.from!, end: date.to! })
-        );
-        setFilteredDeals(filtered);
-
-        const wonDeals = filtered.filter(d => d.stage === 'Closed Won');
-        const monthlySales = wonDeals.reduce((acc, deal) => {
-            const month = format(startOfMonth(deal.closeDate), 'MMM yyyy');
-            acc[month] = (acc[month] || 0) + deal.value;
-            return acc;
-        }, {} as Record<string, number>);
-
-        const chartData = Object.entries(monthlySales)
-            .map(([name, sales]) => ({ name, sales }))
-            .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
-        
-        setSalesChartData(chartData);
-
-    } else {
-        setFilteredDeals(allDeals);
-        setSalesChartData([]);
-    }
-  }, [date, allDeals]);
   
-  useEffect(() => {
-      if(allDeals.length > 0 && customers.length > 0) {
-        const customersById = new Map(customers.map(c => [c.id, c]));
-        const totalLeads = Array.isArray(data.leadsData) ? data.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
-        const activeDealsCount = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
-        const totalRevenue = filteredDeals
-          .filter(d => d.stage === 'Closed Won')
-          .reduce((acc, d) => acc + d.value, 0);
-        const totalSales = filteredDeals
-          .filter(d => d.stage === 'Closed Won').length;
+  const filteredDeals = useMemo(() => {
+    if (!date?.from || !date?.to) return allDeals;
+    return allDeals.filter(deal => 
+        deal.closeDate && isWithinInterval(deal.closeDate, { start: date.from!, end: date.to! })
+    );
+  }, [allDeals, date]);
 
-        const recentSalesData = filteredDeals
-          .filter(deal => deal.stage === 'Closed Won')
-          .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
-          .slice(0, 5)
-          .map(deal => {
-            const customer = customersById.get(deal.customerId);
-            return {
-              name: customer?.name || 'Unknown Customer',
-              email: customer?.email || '',
-              amount: deal.value,
-              avatar: customer?.avatar || `https://placehold.co/40x40.png`,
-            }
-          });
+  const salesChartData = useMemo(() => {
+    const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won');
+    const monthlySales = wonDeals.reduce((acc, deal) => {
+        const month = format(startOfMonth(deal.closeDate), 'MMM yyyy');
+        acc[month] = (acc[month] || 0) + deal.value;
+        return acc;
+    }, {} as Record<string, number>);
 
-        setMetrics({
-          totalRevenue,
-          totalSales,
-          totalLeads,
-          activeDealsCount,
-          leadsBySource: data.leadsData,
-          dealsData: filteredDeals,
-          recentSales: recentSalesData,
-        });
-      }
-  }, [filteredDeals, customers, allDeals]);
+    return Object.entries(monthlySales)
+        .map(([name, sales]) => ({ name, sales }))
+        .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+  }, [filteredDeals]);
+
+  const metrics = useMemo(() => {
+    if (isLoading || customers.length === 0) return null;
+
+    const customersById = new Map(customers.map(c => [c.id, c]));
+    const totalLeads = Array.isArray(data.leadsData) ? data.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
+    const activeDealsCount = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
+    
+    const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won');
+    const totalRevenue = wonDeals.reduce((acc, d) => acc + d.value, 0);
+    const totalSales = wonDeals.length;
+
+    const recentSalesData = wonDeals
+      .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
+      .slice(0, 5)
+      .map(deal => {
+        const customer = customersById.get(deal.customerId);
+        return {
+          name: customer?.name || 'Unknown Customer',
+          email: customer?.email || '',
+          amount: deal.value,
+          avatar: customer?.avatar || `https://placehold.co/40x40.png`,
+        }
+      });
+
+    return {
+      totalRevenue,
+      totalSales,
+      totalLeads,
+      activeDealsCount,
+      leadsBySource: data.leadsData,
+      dealsData: filteredDeals,
+      recentSales: recentSalesData,
+    };
+  }, [isLoading, filteredDeals, customers]);
   
   if (!metrics) {
     return (
