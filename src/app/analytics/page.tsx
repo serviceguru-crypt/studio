@@ -190,8 +190,7 @@ export default function AnalyticsPage() {
                 </Card>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8">
-                <BarChartCard data={metrics.teamPerformance} />
+            <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1 md:gap-8">
                 <Card>
                     <CardHeader>
                         <CardTitle>Sales Funnel</CardTitle>

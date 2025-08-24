@@ -13,6 +13,7 @@ import * as data from '@/lib/data';
 import { RecentSales } from '@/components/recent-sales';
 import { Users, DollarSign, Briefcase, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function Home() {
   const [metrics, setMetrics] = useState<any>(null);
@@ -52,7 +53,6 @@ export default function Home() {
              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
               <Skeleton className="h-[350px] w-full" />
               <Skeleton className="h-[350px] w-full" />
-              <Skeleton className="h-[350px] w-full" />
             </div>
           </main>
         </div>
@@ -82,9 +82,8 @@ export default function Home() {
                <AiSummary metrics={metrics} />
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8">
               <PieChartCard data={metrics.leadsData} />
-              <BarChartCard data={metrics.teamPerformance} />
               <RecentSales data={metrics.recentSales} />
           </div>
         </main>
@@ -92,3 +91,4 @@ export default function Home() {
     </DashboardLayout>
   );
 }
+
