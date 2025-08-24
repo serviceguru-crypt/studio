@@ -1,6 +1,8 @@
+
 "use client";
 
 import * as React from 'react';
+import Link from 'next/link';
 import {
   Table,
   TableBody,
@@ -96,11 +98,13 @@ export default function CustomersPage() {
                     Export
                   </span>
                 </Button>
-                <Button size="sm" className="h-8 gap-1">
-                  <PlusCircle className="h-3.5 w-3.5" />
-                  <span className="sr-only sm:not-sr-only sm:whitespace-rap">
-                    Add Customer
-                  </span>
+                <Button size="sm" className="h-8 gap-1" asChild>
+                  <Link href="/customers/new">
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span className="sr-only sm:not-sr-only sm:whitespace-rap">
+                      Add Customer
+                    </span>
+                  </Link>
                 </Button>
               </div>
             </div>

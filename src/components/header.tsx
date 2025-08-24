@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { Calendar as CalendarIcon, Download, Plus, Search } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
 import { Input } from "@/components/ui/input";
+import Link from 'next/link';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,8 +86,12 @@ export function Header() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Add New Customer</DropdownMenuItem>
-            <DropdownMenuItem>Add New Deal</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+                <Link href="/customers/new">Add New Customer</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+                <Link href="/deals/new">Add New Deal</Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <DropdownMenu>
