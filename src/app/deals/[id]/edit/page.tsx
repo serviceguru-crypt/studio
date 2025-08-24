@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { useRouter, useParams } from "next/navigation";
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { getDealById, updateDeal } from "@/lib/data";
+import { getDealById, updateDeal, getCustomers, Customer } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 
 const dealFormSchema = z.object({
   name: z.string().min(3, { message: "Deal name must be at least 3 characters." }),
-  company: z.string().min(2, { message: "Company must be at least 2 characters." }),
+  customerId: z.string({ required_error: "Please select a customer." }),
   value: z.coerce.number().min(0, { message: "Value must be a positive number." }),
   stage: z.enum(["Qualification", "Proposal", "Negotiation", "Closed Won", "Closed Lost"]),
   closeDate: z.date({ required_error: "A close date is required." }),
@@ -37,19 +37,14 @@ export default function EditDealPage() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   const form = useForm<DealFormValues>({
     resolver: zodResolver(dealFormSchema),
-    defaultValues: {
-      name: "",
-      company: "",
-      value: 0,
-      stage: "Qualification",
-      closeDate: new Date(),
-    },
   });
 
   useEffect(() => {
+    setCustomers(getCustomers());
     if (id) {
         const deal = getDealById(id as string);
         if(deal) {
@@ -100,15 +95,24 @@ export default function EditDealPage() {
                       </FormItem>
                     )}
                   />
-                  <FormField
+                   <FormField
                     control={form.control}
-                    name="company"
+                    name="customerId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g. AgriMart" {...field} />
-                        </FormControl>
+                        <FormLabel>Customer</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a customer" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {customers.map(customer => (
+                                <SelectItem key={customer.id} value={customer.id}>{customer.company}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -203,3 +207,4 @@ export default function EditDealPage() {
     </DashboardLayout>
   );
 }
+    

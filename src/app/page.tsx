@@ -14,11 +14,12 @@ import { Users, DollarSign, Briefcase, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { addDays, isWithinInterval, format, startOfMonth } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
-import type { Deal } from '@/lib/data';
+import type { Deal, Customer } from '@/lib/data';
 
 export default function Home() {
   const [metrics, setMetrics] = useState<any>(null);
   const [allDeals, setAllDeals] = useState<Deal[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredDeals, setFilteredDeals] = useState<Deal[]>([]);
   const [salesChartData, setSalesChartData] = useState<{ name: string; sales: number }[]>([]);
   const [date, setDate] = useState<DateRange | undefined>({
@@ -28,7 +29,9 @@ export default function Home() {
 
   const fetchData = useCallback(() => {
     const deals = data.getDeals();
+    const customers = data.getCustomers();
     setAllDeals(deals);
+    setCustomers(customers);
     setMetrics({
       totalRevenue: 45231.89, // This could be dynamic later
       subscriptions: 2350,
@@ -111,6 +114,7 @@ export default function Home() {
     )
   }
 
+  const customersById = new Map(customers.map(c => [c.id, c]));
   const totalLeads = metrics.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0);
   const activeDealsCount = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
   const totalRevenue = filteredDeals
@@ -123,12 +127,15 @@ export default function Home() {
     .filter(deal => deal.stage === 'Closed Won')
     .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
     .slice(0, 5)
-    .map(deal => ({
-      name: deal.company,
-      email: `Deal: ${deal.name}`, // Using deal name as a substitute for email
-      amount: deal.value,
-      avatar: `https://placehold.co/40x40.png?text=${deal.company.charAt(0)}`,
-    }));
+    .map(deal => {
+      const customer = customersById.get(deal.customerId);
+      return {
+        name: customer?.name || 'Unknown Customer',
+        email: customer?.email || '',
+        amount: deal.value,
+        avatar: customer?.avatar || `https://placehold.co/40x40.png`,
+      }
+    });
 
   return (
     <DashboardLayout>
@@ -158,3 +165,4 @@ export default function Home() {
     </DashboardLayout>
   );
 }
+    

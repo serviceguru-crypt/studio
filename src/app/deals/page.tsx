@@ -38,7 +38,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getDeals, deleteDeal, Deal, updateDeal } from '@/lib/data';
+import { getDeals, deleteDeal, Deal, updateDeal, getCustomers, Customer } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { exportToCsv } from '@/lib/utils';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
@@ -48,6 +48,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type DealWithScore = Deal & { 
     isScoring?: boolean;
+    company?: string;
 };
 
 
@@ -87,9 +88,17 @@ export default function DealsPage() {
 
   const fetchDeals = React.useCallback(() => {
     const dealsFromDb = getDeals();
-    const dealsToScore = dealsFromDb.filter(d => !d.leadScore);
+    const customers = getCustomers();
+    const customersById = new Map(customers.map(c => [c.id, c]));
+
+    const dealsWithCompany = dealsFromDb.map(deal => ({
+        ...deal,
+        company: customersById.get(deal.customerId)?.company || 'N/A'
+    }));
+
+    const dealsToScore = dealsWithCompany.filter(d => !d.leadScore);
     
-    setAllDeals(dealsFromDb.map(d => ({ ...d, isScoring: !d.leadScore })));
+    setAllDeals(dealsWithCompany.map(d => ({ ...d, isScoring: !d.leadScore })));
 
     dealsToScore.forEach(deal => {
       scoreDealAndupdateState(deal);
@@ -97,6 +106,7 @@ export default function DealsPage() {
   }, []);
 
   const scoreDealAndupdateState = async (dealToScore: DealWithScore) => {
+    if (!dealToScore.company) return;
     try {
         const result: ScoreLeadOutput = await scoreLead({
             dealName: dealToScore.name,
@@ -136,7 +146,7 @@ export default function DealsPage() {
     if (term) {
       deals = deals.filter(deal =>
         deal.name.toLowerCase().includes(term.toLowerCase()) ||
-        deal.company.toLowerCase().includes(term.toLowerCase())
+        deal.company?.toLowerCase().includes(term.toLowerCase())
       );
     }
     
@@ -157,7 +167,7 @@ export default function DealsPage() {
   };
   
   const handleExport = () => {
-    const dataToExport = filteredDeals.map(({ id, isScoring, ...rest }) => rest);
+    const dataToExport = filteredDeals.map(({ id, isScoring, customerId, ...rest }) => rest);
     exportToCsv('deals.csv', dataToExport);
   }
 
@@ -325,3 +335,4 @@ export default function DealsPage() {
     </DashboardLayout>
   );
 }
+    

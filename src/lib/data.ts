@@ -1,5 +1,4 @@
 
-
 import { addDays } from 'date-fns';
 
 export const salesData = [
@@ -33,26 +32,50 @@ export type Deal = {
     name: string;
     stage: 'Qualification' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost';
     value: number;
-    company: string;
+    customerId: string;
     closeDate: Date;
     leadScore?: 'Hot' | 'Warm' | 'Cold';
     justification?: string;
 }
 
+export type Customer = {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    company: string;
+    status: 'Active' | 'Inactive';
+    avatar: string;
+}
+
 const today = new Date();
 
-let dealsData: Deal[] = [
-    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, company: 'AgriMart', closeDate: addDays(today, 10) },
-    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, company: 'FinServe Solutions', closeDate: addDays(today, 25) },
-    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, company: 'TechCo Nigeria', closeDate: addDays(today, -5) },
-    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, company: 'Speedy Logistics', closeDate: addDays(today, 45) },
-    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, company: 'HealthWise Ltd', closeDate: addDays(today, 15) },
-    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, company: 'EduTech Innovations', closeDate: addDays(today, -2) },
-    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, company: 'PowerGen NG', closeDate: addDays(today, 30) },
-    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, company: 'RetailHub', closeDate: addDays(today, -1) },
-    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, company: 'Fashionista NG', closeDate: addDays(today, 60) },
-    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, company: 'BuildIt Construction', closeDate: addDays(today, 20) },
+export const initialCustomersData: Customer[] = [
+    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', company: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', company: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', company: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', company: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', company: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', company: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', company: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', company: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', company: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', company: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
 ];
+
+let dealsData: Deal[] = [
+    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, customerId: 'C003', closeDate: addDays(today, 10) },
+    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, customerId: 'C002', closeDate: addDays(today, 25) },
+    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, customerId: 'C001', closeDate: addDays(today, -5) },
+    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, customerId: 'C005', closeDate: addDays(today, 45) },
+    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, customerId: 'C004', closeDate: addDays(today, 15) },
+    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, customerId: 'C006', closeDate: addDays(today, -2) },
+    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, customerId: 'C007', closeDate: addDays(today, 30) },
+    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, customerId: 'C009', closeDate: addDays(today, -1) },
+    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, customerId: 'C010', closeDate: addDays(today, 60) },
+    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, customerId: 'C008', closeDate: addDays(today, 20) },
+];
+
 
 export const recentSales = [
   { name: 'Olivia Martin', email: 'olivia.martin@email.com', amount: 1999.00, avatar: 'https://placehold.co/40x40.png' },
@@ -70,28 +93,6 @@ export const teamPerformance = [
     { name: 'Eve', deals: 5, value: 60000 },
 ];
 
-export type Customer = {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    company: string;
-    status: 'Active' | 'Inactive';
-    avatar: string;
-}
-
-export const initialCustomersData: Customer[] = [
-    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', company: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', company: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', company: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', company: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', company: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', company: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', company: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', company: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', company: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', company: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-];
 
 const initializeData = <T>(key: string, initialData: T[]): T[] => {
     if (typeof window === 'undefined') {
@@ -202,4 +203,4 @@ export const deleteDeal = (id: string) => {
     deals = deals.filter(deal => deal.id !== id);
     localStorage.setItem('deals', JSON.stringify(deals));
 };
-
+    

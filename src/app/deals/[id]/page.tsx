@@ -7,7 +7,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getDealById, Deal } from '@/lib/data';
+import { getDealById, Deal, getCustomerById, Customer } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
@@ -31,6 +31,7 @@ export default function DealDetailsPage() {
     const params = useParams();
     const { id } = params;
     const [deal, setDeal] = useState<Deal | null>(null);
+    const [customer, setCustomer] = useState<Customer | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -41,6 +42,10 @@ export default function DealDetailsPage() {
                     foundDeal.closeDate = new Date(foundDeal.closeDate);
                 }
                 setDeal(foundDeal);
+                const foundCustomer = getCustomerById(foundDeal.customerId);
+                if (foundCustomer) {
+                    setCustomer(foundCustomer);
+                }
             } else {
                 // Handle case where deal is not found, maybe redirect or show a message
                 router.push('/deals');
@@ -97,7 +102,7 @@ export default function DealDetailsPage() {
                             </div>
                             <div className="grid gap-1">
                                 <p className="text-sm font-medium text-muted-foreground">Company</p>
-                                <p>{deal.company}</p>
+                                <p>{customer?.company || 'N/A'}</p>
                             </div>
                              <div className="grid gap-1">
                                 <p className="text-sm font-medium text-muted-foreground">Value</p>
@@ -118,3 +123,4 @@ export default function DealDetailsPage() {
         </DashboardLayout>
     );
 }
+    
