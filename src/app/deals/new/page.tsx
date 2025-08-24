@@ -38,6 +38,7 @@ export default function NewDealPage() {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   
   React.useEffect(() => {
+    // In a real app, you might want to fetch all customers if the user is an admin
     setCustomers(getCustomers());
   }, []);
 

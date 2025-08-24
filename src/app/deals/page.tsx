@@ -38,7 +38,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getDeals, deleteDeal, Deal, updateDeal, getCustomers, Customer } from '@/lib/data';
+import { getDeals, deleteDeal, Deal, updateDeal, getCustomers, Customer, users, User } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { exportToCsv } from '@/lib/utils';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
@@ -84,7 +84,14 @@ export default function DealsPage() {
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [dealToDelete, setDealToDelete] = React.useState<string | null>(null);
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const { toast } = useToast();
+
+   React.useEffect(() => {
+    const userId = localStorage.getItem('currentUser');
+    const user = users.find(u => u.id === userId) || users[0];
+    setCurrentUser(user);
+  }, []);
 
   const fetchDeals = React.useCallback(() => {
     const dealsFromDb = getDeals();
@@ -295,8 +302,12 @@ export default function DealsPage() {
                                     <DropdownMenuItem asChild>
                                         <Link href={`/deals/${deal.id}`}>View Details</Link>
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive" onClick={() => setDealToDelete(deal.id)}>Delete</DropdownMenuItem>
+                                    {currentUser?.role === 'Admin' && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive" onClick={() => setDealToDelete(deal.id)}>Delete</DropdownMenuItem>
+                                        </>
+                                    )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 </TableCell>

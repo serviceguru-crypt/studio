@@ -37,7 +37,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getCustomers, deleteCustomer, Customer } from '@/lib/data';
+import { getCustomers, deleteCustomer, Customer, User, users } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -50,17 +50,23 @@ export default function CustomersPage() {
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [customerToDelete, setCustomerToDelete] = React.useState<string | null>(null);
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const { toast } = useToast();
 
-  const fetchCustomers = () => {
+  React.useEffect(() => {
+    const userId = localStorage.getItem('currentUser');
+    const user = users.find(u => u.id === userId) || users[0];
+    setCurrentUser(user);
+  }, []);
+
+  const fetchCustomers = React.useCallback(() => {
     const customers = getCustomers();
     setAllCustomers(customers);
-    setFilteredCustomers(customers);
-  }
+  }, []);
 
   React.useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [fetchCustomers]);
 
   const filterCustomers = React.useCallback((tab: string, term: string) => {
     let customers = [...allCustomers];
@@ -210,8 +216,12 @@ export default function CustomersPage() {
                                     <DropdownMenuItem asChild>
                                         <Link href={`/customers/${customer.id}`}>View Details</Link>
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive" onClick={() => setCustomerToDelete(customer.id)}>Delete</DropdownMenuItem>
+                                    {currentUser?.role === 'Admin' && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive" onClick={() => setCustomerToDelete(customer.id)}>Delete</DropdownMenuItem>
+                                        </>
+                                    )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 </TableCell>
