@@ -62,7 +62,7 @@ export default function CustomerDetailsPage() {
                         </Avatar>
                         <div className="flex-1">
                             <h1 className="text-xl font-semibold tracking-tight">{customer.name}</h1>
-                             <p className="text-sm text-muted-foreground">{customer.company}</p>
+                             <p className="text-sm text-muted-foreground">{customer.organization}</p>
                         </div>
                         <div className="hidden items-center gap-2 md:ml-auto md:flex">
                              <Button variant="outline" size="sm" onClick={() => setIsComposerOpen(true)}>
@@ -100,9 +100,9 @@ export default function CustomerDetailsPage() {
                             <div className="grid gap-2">
                                 <div className="flex items-center gap-2 text-sm">
                                     <Building className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-muted-foreground">Company</span>
+                                    <span className="text-muted-foreground">Organization/Individual</span>
                                 </div>
-                                <p>{customer.company}</p>
+                                <p>{customer.organization}</p>
                             </div>
                              <div className="grid gap-2">
                                 <div className="flex items-center gap-2 text-sm">
@@ -119,7 +119,7 @@ export default function CustomerDetailsPage() {
                     isOpen={isComposerOpen}
                     onOpenChange={setIsComposerOpen}
                     customerName={customer.name}
-                    customerCompany={customer.company}
+                    organizationName={customer.organization}
                 />
             )}
         </DashboardLayout>

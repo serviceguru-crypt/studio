@@ -109,7 +109,7 @@ export default function EditDealPage() {
                           </FormControl>
                           <SelectContent>
                             {customers.map(customer => (
-                                <SelectItem key={customer.id} value={customer.id}>{customer.company}</SelectItem>
+                                <SelectItem key={customer.id} value={customer.id}>{customer.organization}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -207,4 +207,3 @@ export default function EditDealPage() {
     </DashboardLayout>
   );
 }
-    

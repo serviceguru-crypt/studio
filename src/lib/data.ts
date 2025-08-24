@@ -43,7 +43,7 @@ export type Customer = {
     name: string;
     email: string;
     phone?: string;
-    company: string;
+    organization: string;
     status: 'Active' | 'Inactive';
     avatar: string;
 }
@@ -51,16 +51,16 @@ export type Customer = {
 const today = new Date();
 
 export const initialCustomersData: Customer[] = [
-    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', company: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', company: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', company: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', company: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', company: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', company: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', company: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', company: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', company: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', company: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', organization: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', organization: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', organization: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', organization: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', organization: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', organization: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', organization: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', organization: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', organization: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', organization: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
 ];
 
 let dealsData: Deal[] = [
@@ -203,4 +203,3 @@ export const deleteDeal = (id: string) => {
     deals = deals.filter(deal => deal.id !== id);
     localStorage.setItem('deals', JSON.stringify(deals));
 };
-    

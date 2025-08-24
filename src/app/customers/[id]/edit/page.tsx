@@ -21,7 +21,7 @@ const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   phone: z.string().optional(),
-  company: z.string().min(2, { message: "Company must be at least 2 characters." }),
+  organization: z.string().min(2, { message: "Organization/Individual name must be at least 2 characters." }),
   status: z.enum(["Active", "Inactive"]),
 });
 
@@ -39,7 +39,7 @@ export default function EditCustomerPage() {
       name: "",
       email: "",
       phone: "",
-      company: "",
+      organization: "",
       status: "Active",
     }
   });
@@ -123,10 +123,10 @@ export default function EditCustomerPage() {
                   />
                   <FormField
                     control={form.control}
-                    name="company"
+                    name="organization"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Company</FormLabel>
+                        <FormLabel>Organization/Individual</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g. TechCo Nigeria" {...field} />
                         </FormControl>

@@ -48,7 +48,7 @@ import { useToast } from "@/hooks/use-toast";
 
 type DealWithScore = Deal & { 
     isScoring?: boolean;
-    company?: string;
+    organization?: string;
 };
 
 
@@ -91,14 +91,14 @@ export default function DealsPage() {
     const customers = getCustomers();
     const customersById = new Map(customers.map(c => [c.id, c]));
 
-    const dealsWithCompany = dealsFromDb.map(deal => ({
+    const dealsWithOrganization = dealsFromDb.map(deal => ({
         ...deal,
-        company: customersById.get(deal.customerId)?.company || 'N/A'
+        organization: customersById.get(deal.customerId)?.organization || 'N/A'
     }));
 
-    const dealsToScore = dealsWithCompany.filter(d => !d.leadScore);
+    const dealsToScore = dealsWithOrganization.filter(d => !d.leadScore);
     
-    setAllDeals(dealsWithCompany.map(d => ({ ...d, isScoring: !d.leadScore })));
+    setAllDeals(dealsWithOrganization.map(d => ({ ...d, isScoring: !d.leadScore })));
 
     dealsToScore.forEach(deal => {
       scoreDealAndupdateState(deal);
@@ -106,11 +106,11 @@ export default function DealsPage() {
   }, []);
 
   const scoreDealAndupdateState = async (dealToScore: DealWithScore) => {
-    if (!dealToScore.company) return;
+    if (!dealToScore.organization) return;
     try {
         const result: ScoreLeadOutput = await scoreLead({
             dealName: dealToScore.name,
-            companyName: dealToScore.company,
+            organizationName: dealToScore.organization,
             dealValue: dealToScore.value,
             stage: dealToScore.stage,
         });
@@ -146,7 +146,7 @@ export default function DealsPage() {
     if (term) {
       deals = deals.filter(deal =>
         deal.name.toLowerCase().includes(term.toLowerCase()) ||
-        deal.company?.toLowerCase().includes(term.toLowerCase())
+        deal.organization?.toLowerCase().includes(term.toLowerCase())
       );
     }
     
@@ -240,7 +240,7 @@ export default function DealsPage() {
                             <TableHead>Deal Name</TableHead>
                             <TableHead>Stage</TableHead>
                              <TableHead className="hidden sm:table-cell">Lead Score</TableHead>
-                            <TableHead className="hidden md:table-cell">Company</TableHead>
+                            <TableHead className="hidden md:table-cell">Organization/Individual</TableHead>
                             <TableHead className="text-right">Value</TableHead>
                             <TableHead>
                                 <span className="sr-only">Actions</span>
@@ -275,7 +275,7 @@ export default function DealsPage() {
                                        <Badge variant="outline">Not Scored</Badge>
                                     )}
                                 </TableCell>
-                                <TableCell className="hidden md:table-cell">{deal.company}</TableCell>
+                                <TableCell className="hidden md:table-cell">{deal.organization}</TableCell>
                                 <TableCell className="text-right">
                                     ₦{deal.value.toLocaleString()}
                                 </TableCell>
@@ -335,4 +335,3 @@ export default function DealsPage() {
     </DashboardLayout>
   );
 }
-    

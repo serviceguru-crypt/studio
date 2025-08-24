@@ -14,7 +14,7 @@ import { z } from 'genkit';
 
 const GenerateEmailInputSchema = z.object({
   customerName: z.string().describe('The name of the customer the email is being sent to.'),
-  companyName: z.string().describe('The company of the customer.'),
+  organizationName: z.string().describe('The organization or individual the customer represents.'),
   emailTone: z.enum(['Formal', 'Friendly', 'Follow-up']).describe('The desired tone of the email.'),
   emailContent: z.string().describe('The key points or content to include in the email body.'),
 });
@@ -36,7 +36,7 @@ const prompt = ai.definePrompt({
   output: { schema: GenerateEmailOutputSchema },
   prompt: `You are a professional sales assistant. Your task is to compose a high-quality email.
 
-  The email should be addressed to {{customerName}} from {{companyName}}.
+  The email should be addressed to {{customerName}} from {{organizationName}}.
   The tone of the email must be {{emailTone}}.
   The content of the email should be based on these key points: {{{emailContent}}}.
   

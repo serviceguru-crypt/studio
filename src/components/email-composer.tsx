@@ -23,7 +23,7 @@ interface EmailComposerProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
     customerName: string;
-    customerCompany: string;
+    organizationName: string;
 }
 
 const emailFormSchema = z.object({
@@ -33,7 +33,7 @@ const emailFormSchema = z.object({
 
 type EmailFormValues = z.infer<typeof emailFormSchema>;
 
-export function EmailComposer({ isOpen, onOpenChange, customerName, customerCompany }: EmailComposerProps) {
+export function EmailComposer({ isOpen, onOpenChange, customerName, organizationName }: EmailComposerProps) {
     const { toast } = useToast();
     const [generatedEmail, setGeneratedEmail] = useState<{ subject: string; body: string } | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +52,7 @@ export function EmailComposer({ isOpen, onOpenChange, customerName, customerComp
         try {
             const result = await generateEmail({
                 customerName,
-                companyName: customerCompany,
+                organizationName: organizationName,
                 emailTone: data.emailTone,
                 emailContent: data.emailContent,
             });
@@ -87,7 +87,7 @@ export function EmailComposer({ isOpen, onOpenChange, customerName, customerComp
                     <DialogHeader className="pr-6">
                         <DialogTitle className="flex items-center gap-2"><Wand2 className="text-primary" /> Compose AI Email</DialogTitle>
                         <DialogDescription>
-                            Generate a professional email to {customerName} from {customerCompany}. Just provide the tone and key points.
+                            Generate a professional email to {customerName} from {organizationName}. Just provide the tone and key points.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-4 pr-6">

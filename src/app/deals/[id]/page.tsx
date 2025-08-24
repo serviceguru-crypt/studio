@@ -101,8 +101,8 @@ export default function DealDetailsPage() {
                                 <p>{deal.name}</p>
                             </div>
                             <div className="grid gap-1">
-                                <p className="text-sm font-medium text-muted-foreground">Company</p>
-                                <p>{customer?.company || 'N/A'}</p>
+                                <p className="text-sm font-medium text-muted-foreground">Organization/Individual</p>
+                                <p>{customer?.organization || 'N/A'}</p>
                             </div>
                              <div className="grid gap-1">
                                 <p className="text-sm font-medium text-muted-foreground">Value</p>
@@ -123,4 +123,3 @@ export default function DealDetailsPage() {
         </DashboardLayout>
     );
 }
-    

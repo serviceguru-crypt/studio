@@ -74,7 +74,7 @@ export default function CustomersPage() {
     if (term) {
       customers = customers.filter(customer =>
         customer.name.toLowerCase().includes(term.toLowerCase()) ||
-        customer.company.toLowerCase().includes(term.toLowerCase()) ||
+        customer.organization.toLowerCase().includes(term.toLowerCase()) ||
         customer.email.toLowerCase().includes(term.toLowerCase())
       );
     }
@@ -168,7 +168,7 @@ export default function CustomersPage() {
                             </TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="hidden md:table-cell">Company</TableHead>
+                            <TableHead className="hidden md:table-cell">Organization/Individual</TableHead>
                             <TableHead className="hidden md:table-cell">
                             Email
                             </TableHead>
@@ -190,7 +190,7 @@ export default function CustomersPage() {
                                 <TableCell>
                                     <Badge variant={customer.status === 'Active' ? 'default' : 'secondary'}>{customer.status}</Badge>
                                 </TableCell>
-                                <TableCell className="hidden md:table-cell">{customer.company}</TableCell>
+                                <TableCell className="hidden md:table-cell">{customer.organization}</TableCell>
                                 <TableCell className="hidden md:table-cell">
                                 {customer.email}
                                 </TableCell>

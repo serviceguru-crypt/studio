@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
 
   Deal Information:
   - Name: {{{dealName}}}
-  - Company: {{{companyName}}}
+  - Organization: {{{organizationName}}}
   - Value: {{{dealValue}}}
   - Stage: {{{stage}}}
   `,

@@ -15,7 +15,7 @@ import { addCustomer, Customer } from '@/lib/data';
 const CreateLeadInputSchema = z.object({
   name: z.string().describe("The full name of the lead."),
   email: z.string().email().describe("The email address of the lead."),
-  company: z.string().describe("The company the lead works for."),
+  organization: z.string().describe("The organization or individual name the lead represents."),
   phone: z.string().optional().describe("The phone number of the lead."),
 });
 export type CreateLeadInput = z.infer<typeof CreateLeadInputSchema>;
@@ -36,13 +36,13 @@ const createLeadFlow = ai.defineFlow(
     outputSchema: CreateLeadOutputSchema,
   },
   async (input) => {
-    console.log(`Creating lead for ${input.name} from ${input.company}`);
+    console.log(`Creating lead for ${input.name} from ${input.organization}`);
     
     // Use the existing function to add a customer
     const newCustomer = addCustomer({
       name: input.name,
       email: input.email,
-      company: input.company,
+      organization: input.organization,
       phone: input.phone,
     });
     
