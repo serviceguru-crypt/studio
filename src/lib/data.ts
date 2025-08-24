@@ -26,10 +26,16 @@ export const leadsData = [
 ];
 
 export const dealsData = [
-    { id: 1, name: 'Project Alpha', stage: 'Negotiation', value: 50000 },
-    { id: 2, name: 'Project Beta', stage: 'Proposal', value: 75000 },
-    { id: 3, name: 'Project Gamma', stage: 'Closed Won', value: 120000 },
-    { id: 4, name: 'Project Delta', stage: 'Qualification', value: 30000 },
+    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, company: 'AgriMart' },
+    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, company: 'FinServe Solutions' },
+    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, company: 'TechCo Nigeria' },
+    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, company: 'Speedy Logistics' },
+    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, company: 'HealthWise Ltd' },
+    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, company: 'EduTech Innovations' },
+    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, company: 'PowerGen NG' },
+    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, company: 'RetailHub' },
+    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, company: 'Fashionista NG' },
+    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, company: 'BuildIt Construction' },
 ];
 
 export const recentSales = [
