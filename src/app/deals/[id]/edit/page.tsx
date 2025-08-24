@@ -49,7 +49,10 @@ export default function EditDealPage() {
 
   useEffect(() => {
     setCustomers(getCustomers());
-    if (id) {
+  }, []);
+
+  useEffect(() => {
+    if (id && customers.length > 0) {
         const deal = getDealById(id as string);
         if(deal) {
             form.reset({
@@ -60,7 +63,8 @@ export default function EditDealPage() {
             router.push('/deals');
         }
     }
-  }, [id, form, router]);
+  }, [id, customers, form, router]);
+
 
   function onSubmit(data: DealFormValues) {
     if (id) {
