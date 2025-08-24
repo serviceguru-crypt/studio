@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
@@ -23,7 +24,7 @@ export function LineChartCard({ data }: LineChartCardProps) {
         <CardDescription>A look at your sales over the last 7 months.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[300px] w-full">
+        <ChartContainer config={chartConfig} className="w-full aspect-[9/4]">
             <LineChart
               data={data}
               margin={{

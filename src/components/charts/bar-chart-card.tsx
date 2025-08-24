@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
@@ -20,7 +21,7 @@ export function BarChartCard({ data }: BarChartCardProps) {
                 <CardDescription>Deals closed by team members.</CardDescription>
             </CardHeader>
             <CardContent>
-                <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                <ChartContainer config={chartConfig} className="w-full aspect-[4/3] sm:aspect-[2/1] lg:aspect-[4/3]">
                     <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
                         <YAxis
                             dataKey="name"

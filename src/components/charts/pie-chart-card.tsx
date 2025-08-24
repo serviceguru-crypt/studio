@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts';
@@ -21,7 +22,7 @@ export function PieChartCard({ data }: PieChartCardProps) {
                 <CardDescription>Distribution of leads from various sources.</CardDescription>
             </CardHeader>
             <CardContent>
-                <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[250px]">
+                <ChartContainer config={chartConfig} className="mx-auto w-full aspect-square max-h-[300px]">
                     <PieChart>
                         <Tooltip content={<ChartTooltipContent />} />
                         <Pie data={data} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
