@@ -5,26 +5,11 @@
  * @fileOverview A lead scoring AI agent.
  * 
  * - scoreLead - A function that handles the lead scoring process.
- * - ScoreLeadInput - The input type for the scoreLead function.
- * - ScoreLeadOutput - The return type for the scoreLead function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { ScoreLeadInputSchema, ScoreLeadOutputSchema, ScoreLeadInput, ScoreLeadOutput } from '@/ai/schemas/score-lead-schema';
 
-export const ScoreLeadInputSchema = z.object({
-  dealName: z.string().describe('The name or title of the deal.'),
-  companyName: z.string().describe('The name of the company associated with the deal.'),
-  dealValue: z.number().describe('The monetary value of the deal.'),
-  stage: z.string().describe('The current stage of the deal in the sales pipeline (e.g., Qualification, Proposal).'),
-});
-export type ScoreLeadInput = z.infer<typeof ScoreLeadInputSchema>;
-
-export const ScoreLeadOutputSchema = z.object({
-  leadScore: z.enum(['Hot', 'Warm', 'Cold']).describe('The calculated score for the lead.'),
-  justification: z.string().describe('A brief justification for why the lead was given this score.'),
-});
-export type ScoreLeadOutput = z.infer<typeof ScoreLeadOutputSchema>;
 
 export async function scoreLead(input: ScoreLeadInput): Promise<ScoreLeadOutput> {
   return scoreLeadFlow(input);

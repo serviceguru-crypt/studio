@@ -31,7 +31,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getDeals, Deal } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { exportToCsv } from '@/lib/utils';
-import { scoreLead, ScoreLeadOutput } from '@/ai/flows/score-lead-flow';
+import { scoreLead } from '@/ai/flows/score-lead-flow';
+import type { ScoreLeadOutput } from '@/ai/schemas/score-lead-schema';
 import { Skeleton } from '@/components/ui/skeleton';
 
 type DealWithScore = Deal & { 
@@ -86,7 +87,7 @@ export default function DealsPage() {
     if (!dealToScore) return;
 
     try {
-        const result = await scoreLead({
+        const result: ScoreLeadOutput = await scoreLead({
             dealName: dealToScore.name,
             companyName: dealToScore.company,
             dealValue: dealToScore.value,
