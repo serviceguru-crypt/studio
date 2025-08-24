@@ -57,6 +57,7 @@ export default function EditDealPage() {
         if(deal) {
             form.reset({
               ...deal,
+              value: deal.value || 0,
               closeDate: deal.closeDate,
             });
         } else {
