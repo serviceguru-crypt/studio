@@ -22,11 +22,21 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
-export function Header() {
-  const [date, setDate] = React.useState<DateRange | undefined>({
+interface HeaderProps {
+  date?: DateRange;
+  onDateChange?: (date: DateRange | undefined) => void;
+}
+
+
+export function Header({ date, onDateChange }: HeaderProps) {
+  const [internalDate, setInternalDate] = React.useState<DateRange | undefined>({
     from: new Date(2024, 0, 20),
     to: addDays(new Date(2024, 0, 20), 30),
   });
+
+  const displayDate = date ?? internalDate;
+  const setDisplayDate = onDateChange ?? setInternalDate;
+
 
   return (
     <header className="flex-shrink-0 flex items-center h-16 px-4 md:px-6 border-b">
@@ -46,18 +56,18 @@ export function Header() {
               variant={"outline"}
               className={cn(
                 "w-full sm:w-[280px] justify-start text-left font-normal",
-                !date && "text-muted-foreground"
+                !displayDate && "text-muted-foreground"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {date?.from ? (
-                date.to ? (
+              {displayDate?.from ? (
+                displayDate.to ? (
                   <>
-                    {format(date.from, "LLL dd, y")} -{" "}
-                    {format(date.to, "LLL dd, y")}
+                    {format(displayDate.from, "LLL dd, y")} -{" "}
+                    {format(displayDate.to, "LLL dd, y")}
                   </>
                 ) : (
-                  format(date.from, "LLL dd, y")
+                  format(displayDate.from, "LLL dd, y")
                 )
               ) : (
                 <span>Pick a date</span>
@@ -68,9 +78,9 @@ export function Header() {
             <Calendar
               initialFocus
               mode="range"
-              defaultMonth={date?.from}
-              selected={date}
-              onSelect={setDate}
+              defaultMonth={displayDate?.from}
+              selected={displayDate}
+              onSelect={setDisplayDate}
               numberOfMonths={2}
             />
           </PopoverContent>
@@ -124,3 +134,5 @@ export function Header() {
     </header>
   );
 }
+
+    

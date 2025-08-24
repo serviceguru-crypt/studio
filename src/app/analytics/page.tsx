@@ -2,6 +2,8 @@
 "use client";
 
 import * as React from 'react';
+import { addDays, isWithinInterval } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { MetricCard } from '@/components/metric-card';
@@ -9,7 +11,7 @@ import { LineChartCard } from '@/components/charts/line-chart-card';
 import { BarChartCard } from '@/components/charts/bar-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
 import { salesData, revenueData, leadsData, recentSales, teamPerformance, getDeals, Deal } from '@/lib/data';
-import { Users, DollarSign, Briefcase, TrendingUp, TrendingDown, CircleHelp } from 'lucide-react';
+import { Users, DollarSign, Briefcase, TrendingUp, TrendingDown, CircleHelp, File } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -21,6 +23,8 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { exportToCsv } from '@/lib/utils';
 
 
 const getBadgeVariant = (stage: string) => {
@@ -36,11 +40,30 @@ const getBadgeVariant = (stage: string) => {
     }
 }
 export default function AnalyticsPage() {
-    const [deals, setDeals] = React.useState<Deal[]>([]);
+    const [allDeals, setAllDeals] = React.useState<Deal[]>([]);
+    const [filteredDeals, setFilteredDeals] = React.useState<Deal[]>([]);
+    const [date, setDate] = React.useState<DateRange | undefined>({
+      from: addDays(new Date(), -90),
+      to: new Date(),
+    });
+
 
     React.useEffect(() => {
-        setDeals(getDeals());
+        const deals = getDeals();
+        setAllDeals(deals);
     }, []);
+
+    React.useEffect(() => {
+        if (date?.from && date?.to) {
+            const filtered = allDeals.filter(deal => 
+                isWithinInterval(deal.closeDate, { start: date.from!, end: date.to! })
+            );
+            setFilteredDeals(filtered);
+        } else {
+            setFilteredDeals(allDeals);
+        }
+    }, [date, allDeals]);
+
 
     const metrics = {
         totalRevenue: 45231.89,
@@ -54,11 +77,11 @@ export default function AnalyticsPage() {
         teamPerformance: teamPerformance
     };
     
-    if (deals.length === 0) {
+    if (allDeals.length === 0) {
         return (
              <DashboardLayout>
                 <div className="flex flex-col w-full">
-                <Header />
+                <Header date={date} onDateChange={setDate}/>
                 <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
                      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
                         <Skeleton className="h-[125px] w-full" />
@@ -76,17 +99,30 @@ export default function AnalyticsPage() {
         )
     }
 
+    const handleExport = () => {
+        const dataToExport = filteredDeals.map(({ id, ...rest }) => rest);
+        exportToCsv('analytics_deals.csv', dataToExport);
+    }
+
     const totalLeads = metrics.leadsData.reduce((acc, item) => acc + item.count, 0);
-    const wonDeals = deals.filter(d => d.stage === 'Closed Won');
-    const lostDeals = deals.filter(d => d.stage === 'Closed Lost');
+    const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won');
+    const lostDeals = filteredDeals.filter(d => d.stage === 'Closed Lost');
     const winRate = (wonDeals.length > 0 || lostDeals.length > 0) ? (wonDeals.length / (wonDeals.length + lostDeals.length)) * 100 : 0;
-    const avgDealValue = deals.length > 0 ? deals.reduce((acc, deal) => acc + deal.value, 0) / deals.length : 0;
+    const avgDealValue = filteredDeals.length > 0 ? filteredDeals.reduce((acc, deal) => acc + deal.value, 0) / filteredDeals.length : 0;
 
   return (
     <DashboardLayout>
       <div className="flex flex-col w-full">
-        <Header />
+        <Header date={date} onDateChange={setDate} />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
+            <div className="flex justify-end">
+                 <Button size="sm" variant="outline" className="h-8 gap-1" onClick={handleExport}>
+                  <File className="h-3.5 w-3.5" />
+                  <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                    Export
+                  </span>
+                </Button>
+            </div>
             <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
                 <MetricCard title="Win Rate" value={`${winRate.toFixed(1)}%`} icon={<TrendingUp className="h-4 w-4" />} description="Ratio of deals won" />
                 <MetricCard title="Avg. Deal Value" value={`₦${avgDealValue.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} description="Average value of all deals" />
@@ -115,7 +151,7 @@ export default function AnalyticsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {deals.map(deal => (
+                                {filteredDeals.map(deal => (
                                 <TableRow key={deal.id}>
                                     <TableCell className="font-medium">{deal.name}</TableCell>
                                     <TableCell>
@@ -129,6 +165,11 @@ export default function AnalyticsPage() {
                                 ))}
                             </TableBody>
                         </Table>
+                         {filteredDeals.length === 0 && (
+                            <div className="text-center py-10">
+                                <p className="text-muted-foreground">No deals found for the selected date range.</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -158,7 +199,7 @@ export default function AnalyticsPage() {
                                     <p className="text-sm text-muted-foreground">Leads that fit criteria</p>
                                 </div>
                             </div>
-                            <p className="text-xl font-bold">{deals.filter(d => d.stage === 'Qualification').length}</p>
+                            <p className="text-xl font-bold">{filteredDeals.filter(d => d.stage === 'Qualification').length}</p>
                         </div>
                          <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                             <div className="flex items-center gap-3">
@@ -168,7 +209,7 @@ export default function AnalyticsPage() {
                                     <p className="text-sm text-muted-foreground">Deals in proposal stage</p>
                                 </div>
                             </div>
-                            <p className="text-xl font-bold">{deals.filter(d => d.stage === 'Proposal').length}</p>
+                            <p className="text-xl font-bold">{filteredDeals.filter(d => d.stage === 'Proposal').length}</p>
                         </div>
                          <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                             <div className="flex items-center gap-3">
@@ -188,3 +229,5 @@ export default function AnalyticsPage() {
     </DashboardLayout>
   );
 }
+
+    
