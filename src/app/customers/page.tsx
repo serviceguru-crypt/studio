@@ -27,39 +27,52 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { customersData } from '@/lib/data';
+import { getCustomers, Customer } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = React.useState(customersData);
+  const [allCustomers, setAllCustomers] = React.useState<Customer[]>([]);
+  const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
 
+  React.useEffect(() => {
+    const customers = getCustomers();
+    setAllCustomers(customers);
+    setFilteredCustomers(customers);
+  }, []);
+
+  const filterCustomers = React.useCallback((tab: string, term: string) => {
+    let customers = [...allCustomers];
+    
+    // Filter by tab
+    if (tab !== 'all') {
+      customers = customers.filter(customer => customer.status.toLowerCase() === tab);
+    }
+    
+    // Filter by search term
+    if (term) {
+      customers = customers.filter(customer =>
+        customer.name.toLowerCase().includes(term.toLowerCase()) ||
+        customer.company.toLowerCase().includes(term.toLowerCase()) ||
+        customer.email.toLowerCase().includes(term.toLowerCase())
+      );
+    }
+    
+    setFilteredCustomers(customers);
+  }, [allCustomers]);
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    if (value === 'all') {
-      setCustomers(customersData.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase())));
-    } else {
-      setCustomers(customersData.filter(customer => customer.status.toLowerCase() === value && customer.name.toLowerCase().includes(searchTerm.toLowerCase())));
-    }
+    filterCustomers(value, searchTerm);
   };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const term = event.target.value;
     setSearchTerm(term);
-    const filteredByStatus = activeTab === 'all' ? customersData : customersData.filter(c => c.status.toLowerCase() === activeTab);
-    
-    if (term === '') {
-        setCustomers(filteredByStatus);
-    } else {
-        setCustomers(
-            filteredByStatus.filter(customer =>
-                customer.name.toLowerCase().includes(term.toLowerCase())
-            )
-        );
-    }
+    filterCustomers(activeTab, term);
   };
 
 
@@ -68,7 +81,7 @@ export default function CustomersPage() {
       <div className="flex flex-col w-full">
         <Header />
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-          <Tabs defaultValue="all" onValueChange={handleTabChange}>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
             <div className="flex items-center">
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
@@ -144,7 +157,7 @@ export default function CustomersPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {customers.map(customer => (
+                        {filteredCustomers.map(customer => (
                             <TableRow key={customer.id}>
                                 <TableCell className="hidden sm:table-cell">
                                     <Avatar className="h-9 w-9">
@@ -181,9 +194,9 @@ export default function CustomersPage() {
                         ))}
                         </TableBody>
                     </Table>
-                     {customers.length === 0 && (
+                     {filteredCustomers.length === 0 && (
                         <div className="text-center py-10">
-                            <p className="text-muted-foreground">No customers found matching your search.</p>
+                            <p className="text-muted-foreground">No customers found matching your criteria.</p>
                         </div>
                     )}
                     </CardContent>

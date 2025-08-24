@@ -54,7 +54,17 @@ export const teamPerformance = [
     { name: 'Eve', deals: 5, value: 60000 },
 ];
 
-export const customersData = [
+export type Customer = {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    company: string;
+    status: 'Active' | 'Inactive';
+    avatar: string;
+}
+
+export const initialCustomersData: Customer[] = [
     { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', company: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
     { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', company: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
     { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', company: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
@@ -66,3 +76,30 @@ export const customersData = [
     { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', company: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png' },
     { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', company: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
 ];
+
+// Helper to get customers from local storage
+export const getCustomers = (): Customer[] => {
+    if (typeof window === 'undefined') {
+        return initialCustomersData;
+    }
+    const storedCustomers = localStorage.getItem('customers');
+    if (storedCustomers) {
+        return JSON.parse(storedCustomers);
+    }
+    localStorage.setItem('customers', JSON.stringify(initialCustomersData));
+    return initialCustomersData;
+};
+
+// Helper to add a customer to local storage
+export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar'>) => {
+    const customers = getCustomers();
+    const newCustomer: Customer = {
+        ...customer,
+        id: `C${(customers.length + 1).toString().padStart(3, '0')}`,
+        status: 'Active',
+        avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
+    };
+    const updatedCustomers = [...customers, newCustomer];
+    localStorage.setItem('customers', JSON.stringify(updatedCustomers));
+    return newCustomer;
+};

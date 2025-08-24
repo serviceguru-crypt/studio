@@ -3,6 +3,7 @@
 
 import { z } from "zod";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { DashboardLayout } from '@/components/dashboard-layout';
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from "@/components/ui/label";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { addCustomer } from "@/lib/data";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -25,6 +27,7 @@ type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
 export default function NewCustomerPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
     defaultValues: {
@@ -36,12 +39,12 @@ export default function NewCustomerPage() {
   });
 
   function onSubmit(data: CustomerFormValues) {
-    console.log(data);
+    addCustomer(data);
     toast({
       title: "Customer Created",
       description: "The new customer has been added successfully.",
     });
-    form.reset();
+    router.push('/customers');
   }
 
   return (
