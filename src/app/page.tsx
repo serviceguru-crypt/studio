@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { MetricCard } from '@/components/metric-card';
@@ -26,8 +26,7 @@ export default function Home() {
     to: new Date(),
   });
 
-  useEffect(() => {
-    // Data is fetched on the client-side to avoid SSR issues with localStorage
+  const fetchData = useCallback(() => {
     const deals = data.getDeals();
     setAllDeals(deals);
     setMetrics({
@@ -40,6 +39,19 @@ export default function Home() {
       teamPerformance: data.teamPerformance
     });
   }, []);
+
+  useEffect(() => {
+    fetchData();
+
+    // Add event listener to refetch data when the window gets focus
+    window.addEventListener('focus', fetchData);
+
+    // Cleanup the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('focus', fetchData);
+    };
+  }, [fetchData]);
+
 
   useEffect(() => {
     if (date?.from && date?.to) {
@@ -101,6 +113,16 @@ export default function Home() {
   const totalSales = filteredDeals
     .filter(d => d.stage === 'Closed Won').length;
 
+  const recentSalesData = filteredDeals
+    .filter(deal => deal.stage === 'Closed Won')
+    .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
+    .slice(0, 5)
+    .map(deal => ({
+      name: deal.company,
+      email: `Deal: ${deal.name}`, // Using deal name as a substitute for email
+      amount: deal.value,
+      avatar: `https://placehold.co/40x40.png?text=${deal.company.charAt(0)}`,
+    }));
 
   return (
     <DashboardLayout>
@@ -123,7 +145,7 @@ export default function Home() {
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8">
               <PieChartCard data={metrics.leadsData} />
-              <RecentSales data={metrics.recentSales} />
+              <RecentSales data={recentSalesData} totalSales={totalSales} />
           </div>
         </main>
       </div>

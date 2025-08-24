@@ -8,14 +8,15 @@ type RecentSalesProps = {
         amount: number;
         avatar: string;
     }[];
+    totalSales: number;
 };
 
-export function RecentSales({ data }: RecentSalesProps) {
+export function RecentSales({ data, totalSales }: RecentSalesProps) {
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Recent Sales</CardTitle>
-                <CardDescription>You made 265 sales this month.</CardDescription>
+                <CardDescription>You made {totalSales} sales in this period.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {data.map((sale, index) => (
@@ -28,9 +29,14 @@ export function RecentSales({ data }: RecentSalesProps) {
                             <p className="text-sm font-medium leading-none">{sale.name}</p>
                             <p className="text-sm text-muted-foreground">{sale.email}</p>
                         </div>
-                        <div className="font-medium">+₦{sale.amount.toFixed(2)}</div>
+                        <div className="font-medium">+₦{sale.amount.toLocaleString()}</div>
                     </div>
                 ))}
+                {data.length === 0 && (
+                    <div className="text-center text-sm text-muted-foreground py-10">
+                        No recent sales in this period.
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
