@@ -38,13 +38,14 @@ export function Header() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 ml-auto">
+      <div className="flex items-center gap-2 ml-auto">
         <Popover>
           <PopoverTrigger asChild>
             <Button
+              id="date"
               variant={"outline"}
               className={cn(
-                "w-[280px] justify-start text-left font-normal",
+                "w-full sm:w-[280px] justify-start text-left font-normal",
                 !date && "text-muted-foreground"
               )}
             >
@@ -74,15 +75,15 @@ export function Header() {
             />
           </PopoverContent>
         </Popover>
-        <Button variant="outline">
+        <Button variant="outline" size="sm" className="hidden sm:inline-flex">
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button>
+            <Button size="sm">
               <Plus className="mr-2 h-4 w-4" />
-              Add New
+              <span className="hidden sm:inline">Add New</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
