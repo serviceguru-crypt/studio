@@ -51,10 +51,8 @@ export default function DashboardPage() {
     };
 
     window.addEventListener('storage', handleStorageChange);
-    // Add event listener to refetch data when the window gets focus
     window.addEventListener('focus', fetchData);
 
-    // Cleanup the event listener when the component unmounts
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('focus', fetchData);
@@ -84,7 +82,7 @@ export default function DashboardPage() {
 
     } else {
         setFilteredDeals(allDeals);
-        setSalesChartData([]); // Or calculate based on all deals
+        setSalesChartData([]);
     }
   }, [date, allDeals]);
   

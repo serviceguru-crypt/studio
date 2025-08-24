@@ -41,6 +41,7 @@ const getBadgeVariant = (stage: string) => {
 }
 export default function AnalyticsPage() {
     const [allDeals, setAllDeals] = React.useState<Deal[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
     const [filteredDeals, setFilteredDeals] = React.useState<Deal[]>([]);
     const [salesChartData, setSalesChartData] = React.useState<{ name: string; sales: number }[]>([]);
     const [date, setDate] = React.useState<DateRange | undefined>({
@@ -48,10 +49,11 @@ export default function AnalyticsPage() {
       to: new Date(),
     });
 
-
     React.useEffect(() => {
+        setIsLoading(true);
         const deals = getDeals();
         setAllDeals(deals);
+        setIsLoading(false);
     }, []);
 
     React.useEffect(() => {
@@ -93,7 +95,7 @@ export default function AnalyticsPage() {
         teamPerformance: teamPerformance
     };
     
-    if (allDeals.length === 0) {
+    if (isLoading) {
         return (
              <DashboardLayout>
                 <div className="flex flex-col w-full">
@@ -244,5 +246,3 @@ export default function AnalyticsPage() {
     </DashboardLayout>
   );
 }
-
-    
