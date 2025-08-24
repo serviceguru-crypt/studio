@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { MoreHorizontal, File, PlusCircle, Search, Wand2, Info } from 'lucide-react';
+import { MoreHorizontal, File, PlusCircle, Search, Info } from 'lucide-react';
 
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
@@ -74,18 +74,7 @@ export default function DealsPage() {
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
 
-  React.useEffect(() => {
-    const deals = getDeals();
-    setAllDeals(deals);
-    setFilteredDeals(deals);
-  }, []);
-
-  const handleScoreLead = async (dealId: string) => {
-    setAllDeals(prevDeals => prevDeals.map(d => d.id === dealId ? { ...d, isScoring: true } : d));
-
-    const dealToScore = allDeals.find(d => d.id === dealId);
-    if (!dealToScore) return;
-
+  const scoreDealAndupdateState = async (dealToScore: DealWithScore) => {
     try {
         const result: ScoreLeadOutput = await scoreLead({
             dealName: dealToScore.name,
@@ -96,7 +85,7 @@ export default function DealsPage() {
         
         setAllDeals(prevDeals => 
             prevDeals.map(d => 
-                d.id === dealId 
+                d.id === dealToScore.id 
                 ? { ...d, leadScore: result.leadScore, justification: result.justification, isScoring: false } 
                 : d
             )
@@ -104,9 +93,20 @@ export default function DealsPage() {
 
     } catch (error) {
         console.error("Failed to score lead:", error);
-         setAllDeals(prevDeals => prevDeals.map(d => d.id === dealId ? { ...d, isScoring: false } : d));
+         setAllDeals(prevDeals => prevDeals.map(d => d.id === dealToScore.id ? { ...d, isScoring: false } : d));
     }
   }
+
+  React.useEffect(() => {
+    const deals = getDeals().map(d => ({ ...d, isScoring: !d.leadScore, leadScore: undefined, justification: undefined }));
+    setAllDeals(deals);
+
+    deals.forEach(deal => {
+      if (!deal.leadScore) {
+        scoreDealAndupdateState(deal);
+      }
+    });
+  }, []);
 
   const filterDeals = React.useCallback((tab: string, term: string) => {
     let deals = [...allDeals];
@@ -219,7 +219,6 @@ export default function DealsPage() {
                                     {deal.isScoring ? (
                                         <div className="flex items-center gap-2">
                                             <Skeleton className="h-5 w-12" />
-                                            <Skeleton className="h-4 w-4 rounded-full" />
                                         </div>
                                     ) : deal.leadScore ? (
                                         <div className="flex items-center gap-1">
@@ -234,10 +233,7 @@ export default function DealsPage() {
                                             </Tooltip>
                                         </div>
                                     ) : (
-                                        <Button variant="outline" size="sm" className="h-7 gap-1" onClick={() => handleScoreLead(deal.id)} disabled={deal.isScoring}>
-                                            <Wand2 className="h-3.5 w-3.5"/>
-                                            Score
-                                        </Button>
+                                       <Badge variant="outline">Not Scored</Badge>
                                     )}
                                 </TableCell>
                                 <TableCell className="hidden md:table-cell">{deal.company}</TableCell>
