@@ -45,23 +45,29 @@ export function Header({ date, onDateChange }: HeaderProps) {
   React.useEffect(() => {
     const userJson = localStorage.getItem('currentUser');
     if (userJson) {
-      const user = JSON.parse(userJson);
-      setCurrentUser(user);
+      try {
+        const user = JSON.parse(userJson);
+        setCurrentUser(user);
+        const allUsersJson = localStorage.getItem('users');
+         if (allUsersJson) {
+            const allUsersParsed = JSON.parse(allUsersJson);
+            const currentUserOrgId = user.organizationId;
+            setAllUsers(allUsersParsed.filter((u: User) => u.organizationId === currentUserOrgId));
+         }
+      } catch (e) {
+        console.error("Failed to parse user JSON", e);
+        // Handle corrupted data, e.g., by logging out
+        localStorage.removeItem('currentUser');
+        router.push('/login');
+      }
     }
-     const allUsersJson = localStorage.getItem('users');
-     if (allUsersJson) {
-        const allUsersParsed = JSON.parse(allUsersJson);
-        const currentUserOrgId = JSON.parse(userJson || '{}').organizationId;
-        setAllUsers(allUsersParsed.filter((u: User) => u.organizationId === currentUserOrgId));
-     }
-
-  }, []);
+  }, [router]);
 
   const handleUserChange = (userId: string) => {
-    const user = allUsers.find(u => u.id === userId);
-    if (user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        setCurrentUser(user);
+    const userToSwitchTo = allUsers.find(u => u.id === userId);
+    if (userToSwitchTo) {
+        localStorage.setItem('currentUser', JSON.stringify(userToSwitchTo));
+        setCurrentUser(userToSwitchTo);
         // Force a reload to reflect the data changes for the new user
         window.location.reload();
     }
