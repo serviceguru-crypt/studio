@@ -16,12 +16,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { getDealById, updateDeal } from "@/lib/data";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const dealFormSchema = z.object({
   name: z.string().min(3, { message: "Deal name must be at least 3 characters." }),
   company: z.string().min(2, { message: "Company must be at least 2 characters." }),
   value: z.coerce.number().min(0, { message: "Value must be a positive number." }),
   stage: z.enum(["Qualification", "Proposal", "Negotiation", "Closed Won", "Closed Lost"]),
+  closeDate: z.date({ required_error: "A close date is required." }),
 });
 
 type DealFormValues = z.infer<typeof dealFormSchema>;
@@ -39,6 +45,7 @@ export default function EditDealPage() {
       company: "",
       value: 0,
       stage: "Qualification",
+      closeDate: new Date(),
     },
   });
 
@@ -46,7 +53,10 @@ export default function EditDealPage() {
     if (id) {
         const deal = getDealById(id as string);
         if(deal) {
-            form.reset(deal);
+            form.reset({
+              ...deal,
+              closeDate: new Date(deal.closeDate),
+            });
         } else {
             router.push('/deals');
         }
@@ -122,7 +132,7 @@ export default function EditDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Stage</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a deal stage" />
@@ -136,6 +146,44 @@ export default function EditDealPage() {
                             <SelectItem value="Closed Lost">Closed Lost</SelectItem>
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                   <FormField
+                    control={form.control}
+                    name="closeDate"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Expected Close Date</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP")
+                                ) : (
+                                  <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -155,4 +203,3 @@ export default function EditDealPage() {
     </DashboardLayout>
   );
 }
-

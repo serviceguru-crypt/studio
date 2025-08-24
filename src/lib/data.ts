@@ -1,5 +1,6 @@
 
 
+import { addDays } from 'date-fns';
 
 export const salesData = [
   { name: 'Jan', sales: 4000 },
@@ -33,21 +34,24 @@ export type Deal = {
     stage: 'Qualification' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost';
     value: number;
     company: string;
+    closeDate: Date;
     leadScore?: 'Hot' | 'Warm' | 'Cold';
     justification?: string;
 }
 
+const today = new Date();
+
 let dealsData: Deal[] = [
-    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, company: 'AgriMart' },
-    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, company: 'FinServe Solutions' },
-    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, company: 'TechCo Nigeria' },
-    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, company: 'Speedy Logistics' },
-    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, company: 'HealthWise Ltd' },
-    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, company: 'EduTech Innovations' },
-    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, company: 'PowerGen NG' },
-    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, company: 'RetailHub' },
-    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, company: 'Fashionista NG' },
-    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, company: 'BuildIt Construction' },
+    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, company: 'AgriMart', closeDate: addDays(today, 10) },
+    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, company: 'FinServe Solutions', closeDate: addDays(today, 25) },
+    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, company: 'TechCo Nigeria', closeDate: addDays(today, -5) },
+    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, company: 'Speedy Logistics', closeDate: addDays(today, 45) },
+    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, company: 'HealthWise Ltd', closeDate: addDays(today, 15) },
+    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, company: 'EduTech Innovations', closeDate: addDays(today, -2) },
+    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, company: 'PowerGen NG', closeDate: addDays(today, 30) },
+    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, company: 'RetailHub', closeDate: addDays(today, -1) },
+    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, company: 'Fashionista NG', closeDate: addDays(today, 60) },
+    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, company: 'BuildIt Construction', closeDate: addDays(today, 20) },
 ];
 
 export const recentSales = [
@@ -96,7 +100,12 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
     try {
         const storedData = localStorage.getItem(key);
         if (storedData) {
-            const parsedData = JSON.parse(storedData);
+            const parsedData = JSON.parse(storedData, (key, value) => {
+                if (key === 'closeDate' && typeof value === 'string') {
+                    return new Date(value);
+                }
+                return value;
+            });
             if (Array.isArray(parsedData) && parsedData.length > 0) {
                 return parsedData;
             }
@@ -172,3 +181,4 @@ export const deleteDeal = (id: string) => {
     deals = deals.filter(deal => deal.id !== id);
     localStorage.setItem('deals', JSON.stringify(deals));
 };
+

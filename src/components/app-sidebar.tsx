@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy } from 'lucide-react';
+import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy, Calendar } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -19,6 +20,7 @@ const navItems = [
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/deals', label: 'Deals', icon: Briefcase },
   { href: '/analytics', label: 'Analytics', icon: BarChart },
+  { href: '/calendar', label: 'Calendar', icon: Calendar },
 ];
 
 export function AppSidebar() {

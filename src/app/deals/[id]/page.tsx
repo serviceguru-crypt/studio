@@ -11,6 +11,7 @@ import { getDealById, Deal } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 const getBadgeVariant = (stage: string) => {
     switch (stage.toLowerCase()) {
@@ -99,6 +100,10 @@ export default function DealDetailsPage() {
                              <div className="grid gap-1">
                                 <p className="text-sm font-medium text-muted-foreground">Stage</p>
                                 <div><Badge variant={getBadgeVariant(deal.stage)}>{deal.stage}</Badge></div>
+                            </div>
+                            <div className="grid gap-1">
+                                <p className="text-sm font-medium text-muted-foreground">Expected Close Date</p>
+                                <p>{format(new Date(deal.closeDate), "PPP")}</p>
                             </div>
                         </CardContent>
                     </Card>
