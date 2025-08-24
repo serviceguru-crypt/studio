@@ -19,6 +19,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { MoreHorizontal, File, PlusCircle, Search, Info } from 'lucide-react';
@@ -28,12 +38,13 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getDeals, Deal } from '@/lib/data';
+import { getDeals, deleteDeal, Deal } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { exportToCsv } from '@/lib/utils';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
 import type { ScoreLeadOutput } from '@/ai/schemas/score-lead-schema';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from "@/hooks/use-toast";
 
 type DealWithScore = Deal & { 
     leadScore?: 'Hot' | 'Warm' | 'Cold';
@@ -73,6 +84,18 @@ export default function DealsPage() {
   const [filteredDeals, setFilteredDeals] = React.useState<DealWithScore[]>([]);
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [dealToDelete, setDealToDelete] = React.useState<string | null>(null);
+  const { toast } = useToast();
+
+  const fetchDeals = () => {
+    const deals = getDeals().map(d => ({ ...d, isScoring: !d.leadScore, leadScore: undefined, justification: undefined }));
+    setAllDeals(deals);
+    deals.forEach(deal => {
+      if (!deal.leadScore) {
+        scoreDealAndupdateState(deal);
+      }
+    });
+  }
 
   const scoreDealAndupdateState = async (dealToScore: DealWithScore) => {
     try {
@@ -98,14 +121,7 @@ export default function DealsPage() {
   }
 
   React.useEffect(() => {
-    const deals = getDeals().map(d => ({ ...d, isScoring: !d.leadScore, leadScore: undefined, justification: undefined }));
-    setAllDeals(deals);
-
-    deals.forEach(deal => {
-      if (!deal.leadScore) {
-        scoreDealAndupdateState(deal);
-      }
-    });
+    fetchDeals();
   }, []);
 
   const filterDeals = React.useCallback((tab: string, term: string) => {
@@ -143,6 +159,18 @@ export default function DealsPage() {
     const dataToExport = filteredDeals.map(({ id, isScoring, ...rest }) => rest);
     exportToCsv('deals.csv', dataToExport);
   }
+
+  const handleDelete = () => {
+    if (dealToDelete) {
+        deleteDeal(dealToDelete);
+        toast({
+            title: "Deal Deleted",
+            description: "The deal has been successfully deleted.",
+        });
+        setDealToDelete(null);
+        fetchDeals(); // Re-fetch deals to update the list
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -250,10 +278,14 @@ export default function DealsPage() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>View Details</DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/deals/${deal.id}/edit`}>Edit</Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/deals/${deal.id}`}>View Details</Link>
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => setDealToDelete(deal.id)}>Delete</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                                 </TableCell>
@@ -271,6 +303,22 @@ export default function DealsPage() {
             </TabsContent>
           </Tabs>
           </TooltipProvider>
+
+          <AlertDialog open={!!dealToDelete} onOpenChange={(open) => !open && setDealToDelete(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the deal.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDealToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
         </main>
       </div>
     </DashboardLayout>

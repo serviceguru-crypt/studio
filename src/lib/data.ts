@@ -1,4 +1,5 @@
 
+
 export const salesData = [
   { name: 'Jan', sales: 4000 },
   { name: 'Feb', sales: 3000 },
@@ -33,7 +34,7 @@ export type Deal = {
     company: string;
 }
 
-export const initialDealsData: Deal[] = [
+let dealsData: Deal[] = [
     { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, company: 'AgriMart' },
     { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, company: 'FinServe Solutions' },
     { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, company: 'TechCo Nigeria' },
@@ -85,56 +86,77 @@ export const initialCustomersData: Customer[] = [
     { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', company: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png' },
 ];
 
+const initializeData = <T>(key: string, initialData: T[]): T[] => {
+    if (typeof window === 'undefined') {
+        return initialData;
+    }
+    try {
+        const storedData = localStorage.getItem(key);
+        if (storedData) {
+            return JSON.parse(storedData);
+        }
+        localStorage.setItem(key, JSON.stringify(initialData));
+        return initialData;
+    } catch (error) {
+        console.error(`Error with local storage for key "${key}":`, error);
+        return initialData;
+    }
+}
+
+let customersData = initializeData('customers', initialCustomersData);
+dealsData = initializeData('deals', dealsData);
+
+
 // Helper to get customers from local storage
 export const getCustomers = (): Customer[] => {
-    if (typeof window === 'undefined') {
-        return initialCustomersData;
-    }
-    const storedCustomers = localStorage.getItem('customers');
-    if (storedCustomers) {
-        return JSON.parse(storedCustomers);
-    }
-    localStorage.setItem('customers', JSON.stringify(initialCustomersData));
-    return initialCustomersData;
+    return customersData;
 };
 
 // Helper to add a customer to local storage
 export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar'>) => {
-    const customers = getCustomers();
     const newCustomer: Customer = {
         ...customer,
-        id: `C${(customers.length + 1).toString().padStart(3, '0')}`,
+        id: `C${(customersData.length + 1).toString().padStart(3, '0')}`,
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
     };
-    const updatedCustomers = [...customers, newCustomer];
-    localStorage.setItem('customers', JSON.stringify(updatedCustomers));
+    customersData = [...customersData, newCustomer];
+    localStorage.setItem('customers', JSON.stringify(customersData));
     return newCustomer;
 };
 
 // Helper to get deals from local storage
 export const getDeals = (): Deal[] => {
-    if (typeof window === 'undefined') {
-        return initialDealsData;
-    }
-    const storedDeals = localStorage.getItem('deals');
-    if (storedDeals) {
-        return JSON.parse(storedDeals);
-    }
-    localStorage.setItem('deals', JSON.stringify(initialDealsData));
-    return initialDealsData;
+    return dealsData;
 };
 
 // Helper to add a deal to local storage
 export const addDeal = (deal: Omit<Deal, 'id'>) => {
-    const deals = getDeals();
     const newDeal: Deal = {
         ...deal,
-        id: `D${(deals.length + 1).toString().padStart(3, '0')}`,
+        id: `D${(dealsData.length + 1).toString().padStart(3, '0')}`,
     };
-    const updatedDeals = [...deals, newDeal];
-    localStorage.setItem('deals', JSON.stringify(updatedDeals));
+    dealsData = [...dealsData, newDeal];
+    localStorage.setItem('deals', JSON.stringify(dealsData));
     return newDeal;
 };
 
-export const dealsData = initialDealsData;
+export const getDealById = (id: string): Deal | undefined => {
+    return dealsData.find(deal => deal.id === id);
+}
+
+export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) => {
+    const dealIndex = dealsData.findIndex(deal => deal.id === id);
+    if (dealIndex > -1) {
+        dealsData[dealIndex] = { ...dealsData[dealIndex], ...updatedData };
+        localStorage.setItem('deals', JSON.stringify(dealsData));
+        return dealsData[dealIndex];
+    }
+    return null;
+};
+
+export const deleteDeal = (id: string) => {
+    dealsData = dealsData.filter(deal => deal.id !== id);
+    localStorage.setItem('deals', JSON.stringify(dealsData));
+};
+
