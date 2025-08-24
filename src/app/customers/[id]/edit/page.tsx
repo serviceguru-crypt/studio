@@ -35,13 +35,23 @@ export default function EditCustomerPage() {
 
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      company: "",
+      status: "Active",
+    }
   });
 
   useEffect(() => {
     if (id) {
         const customer = getCustomerById(id as string);
         if(customer) {
-            form.reset(customer);
+            form.reset({
+              ...customer,
+              phone: customer.phone || "", // Ensure phone is not undefined
+            });
         } else {
             router.push('/customers');
         }
