@@ -103,7 +103,7 @@ export default function DealDetailsPage() {
                             </div>
                             <div className="grid gap-1">
                                 <p className="text-sm font-medium text-muted-foreground">Expected Close Date</p>
-                                <p>{format(new Date(deal.closeDate), "PPP")}</p>
+                                <p>{format(deal.closeDate, "PPP")}</p>
                             </div>
                         </CardContent>
                     </Card>

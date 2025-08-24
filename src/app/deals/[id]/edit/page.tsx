@@ -55,7 +55,7 @@ export default function EditDealPage() {
         if(deal) {
             form.reset({
               ...deal,
-              closeDate: deal.closeDate ? new Date(deal.closeDate) : new Date(),
+              closeDate: deal.closeDate,
             });
         } else {
             router.push('/deals');
