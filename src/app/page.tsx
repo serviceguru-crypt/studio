@@ -115,7 +115,7 @@ export default function Home() {
   }
 
   const customersById = new Map(customers.map(c => [c.id, c]));
-  const totalLeads = metrics.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0);
+  const totalLeads = Array.isArray(metrics.leadsData) ? metrics.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
   const activeDealsCount = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
   const totalRevenue = filteredDeals
     .filter(d => d.stage === 'Closed Won')
