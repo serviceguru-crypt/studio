@@ -76,10 +76,18 @@ export function Header() {
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Add New
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>Add New Customer</DropdownMenuItem>
+            <DropdownMenuItem>Add New Deal</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
