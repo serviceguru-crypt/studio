@@ -12,11 +12,6 @@ const leadFormSchema = z.object({
   organizationId: z.string(),
 });
 
-export async function GET() {
-    const leads = getLeads();
-    return NextResponse.json(leads);
-}
-
 export async function POST(request: Request) {
     try {
         const json = await request.json();
