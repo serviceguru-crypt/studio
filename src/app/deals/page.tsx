@@ -38,7 +38,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getDeals, deleteDeal, Deal, updateDeal, getCustomers, Customer, users, User } from '@/lib/data';
+import { Deal, Customer, User } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { exportToCsv } from '@/lib/utils';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
@@ -85,6 +85,7 @@ export default function DealsPage() {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [dealToDelete, setDealToDelete] = React.useState<string | null>(null);
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   const { toast } = useToast();
 
    React.useEffect(() => {
@@ -95,26 +96,52 @@ export default function DealsPage() {
     }
   }, []);
 
-  const fetchDeals = React.useCallback(() => {
-    const dealsFromDb = getDeals();
-    const customers = getCustomers();
-    const customersById = new Map(customers.map(c => [c.id, c]));
+  const fetchDeals = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const response = await fetch('/api/deals');
+        if (!response.ok) {
+            throw new Error('Failed to fetch deals');
+        }
+        let dealsFromApi: DealWithScore[] = await response.json();
+        
+        // The API returns date strings, so we need to convert them to Date objects
+        dealsFromApi = dealsFromApi.map(deal => ({
+            ...deal,
+            closeDate: new Date(deal.closeDate) 
+        }));
 
-    const dealsWithOrganization = dealsFromDb.map(deal => ({
-        ...deal,
-        organization: customersById.get(deal.customerId)?.organization || 'N/A'
-    }));
+        // The API doesn't include organization, so we need a separate fetch for customers
+        const customerResponse = await fetch('/api/customers');
+        const customers: Customer[] = await customerResponse.json();
+        const customersById = new Map(customers.map(c => [c.id, c]));
 
-    const dealsToScore = dealsWithOrganization.filter(d => !d.leadScore);
-    
-    setAllDeals(dealsWithOrganization.map(d => ({ ...d, isScoring: !d.leadScore })));
+        const dealsWithOrganization = dealsFromApi.map(deal => ({
+            ...deal,
+            organization: customersById.get(deal.customerId)?.organization || 'N/A'
+        }));
 
-    dealsToScore.forEach(deal => {
-      scoreDealAndupdateState(deal);
-    });
-  }, []);
+        const dealsToScore = dealsWithOrganization.filter(d => !d.leadScore);
+        
+        setAllDeals(dealsWithOrganization.map(d => ({ ...d, isScoring: !d.leadScore })));
 
-  const scoreDealAndupdateState = async (dealToScore: DealWithScore) => {
+        dealsToScore.forEach(deal => {
+          scoreDealAndUpdateState(deal);
+        });
+
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not fetch deals.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
+
+  const scoreDealAndUpdateState = async (dealToScore: DealWithScore) => {
     if (!dealToScore.organization) return;
     try {
         const result: ScoreLeadOutput = await scoreLead({
@@ -124,8 +151,14 @@ export default function DealsPage() {
             stage: dealToScore.stage,
         });
 
-        updateDeal(dealToScore.id, { leadScore: result.leadScore, justification: result.justification });
+        // Update the deal in the backend
+        await fetch(`/api/deals/${dealToScore.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadScore: result.leadScore, justification: result.justification })
+        });
         
+        // Update the state locally for immediate feedback
         setAllDeals(prevDeals => 
             prevDeals.map(d => 
                 d.id === dealToScore.id 
@@ -180,15 +213,30 @@ export default function DealsPage() {
     exportToCsv('deals.csv', dataToExport);
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (dealToDelete) {
-        deleteDeal(dealToDelete);
-        toast({
-            title: "Deal Deleted",
-            description: "The deal has been successfully deleted.",
-        });
-        setDealToDelete(null);
-        fetchDeals(); // Re-fetch deals to update the list
+        try {
+            const response = await fetch(`/api/deals/${dealToDelete}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                throw new Error('Failed to delete deal');
+            }
+            toast({
+                title: "Deal Deleted",
+                description: "The deal has been successfully deleted.",
+            });
+            fetchDeals(); // Re-fetch deals to update the list
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not delete the deal. Please try again.",
+            });
+        } finally {
+            setDealToDelete(null);
+        }
     }
   };
 
@@ -243,6 +291,32 @@ export default function DealsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
+                    {isLoading ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Deal Name</TableHead>
+                                    <TableHead>Stage</TableHead>
+                                    <TableHead className="hidden sm:table-cell">Lead Score</TableHead>
+                                    <TableHead className="hidden md:table-cell">Organization</TableHead>
+                                    <TableHead className="text-right">Value</TableHead>
+                                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {[...Array(5)].map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                                        <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
                     <Table>
                         <TableHeader>
                         <TableRow>
@@ -317,9 +391,10 @@ export default function DealsPage() {
                         ))}
                         </TableBody>
                     </Table>
-                     {filteredDeals.length === 0 && (
+                    )}
+                     {filteredDeals.length === 0 && !isLoading && (
                         <div className="text-center py-10">
-                            <p className="text-muted-foreground">No deals found.</p>
+                            <p className="text-muted-foreground">No deals found matching your criteria.</p>
                         </div>
                     )}
                     </CardContent>
@@ -348,3 +423,4 @@ export default function DealsPage() {
     </DashboardLayout>
   );
 }
+

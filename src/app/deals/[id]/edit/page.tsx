@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { useRouter, useParams } from "next/navigation";
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { getDealById, updateDeal, getCustomers, Customer } from "@/lib/data";
+import { Deal, Customer } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -47,34 +47,57 @@ export default function EditDealPage() {
     }
   });
 
-  useEffect(() => {
-    setCustomers(getCustomers());
-  }, []);
+  const fetchDealAndCustomers = useCallback(async () => {
+    if (id) {
+        try {
+            // Fetch customers first
+            const custResponse = await fetch('/api/customers');
+            if (!custResponse.ok) throw new Error('Failed to fetch customers');
+            const custData: Customer[] = await custResponse.json();
+            setCustomers(custData);
 
-  useEffect(() => {
-    if (id && customers.length > 0) {
-        const deal = getDealById(id as string);
-        if(deal) {
+            // Then fetch the deal
+            const dealResponse = await fetch(`/api/deals/${id}`);
+            if (!dealResponse.ok) throw new Error('Failed to fetch deal');
+            const deal: Deal = await dealResponse.json();
+
             form.reset({
               ...deal,
               value: deal.value || 0,
               closeDate: deal.closeDate ? new Date(deal.closeDate) : new Date(),
             });
-        } else {
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Could not fetch deal details." });
             router.push('/deals');
         }
     }
-  }, [id, customers, form, router]);
+  }, [id, form, router, toast]);
 
+  useEffect(() => {
+    fetchDealAndCustomers();
+  }, [fetchDealAndCustomers]);
 
-  function onSubmit(data: DealFormValues) {
+  async function onSubmit(data: DealFormValues) {
     if (id) {
-        updateDeal(id as string, data);
-        toast({
-            title: "Deal Updated",
-            description: "The deal has been updated successfully.",
-        });
-        router.push(`/deals/${id}`);
+        try {
+            const response = await fetch(`/api/deals/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) throw new Error('Failed to update deal');
+            
+            toast({
+                title: "Deal Updated",
+                description: "The deal has been updated successfully.",
+            });
+            router.push(`/deals/${id}`);
+            router.refresh();
+        } catch (error) {
+            console.error(error);
+            toast({ variant: "destructive", title: "Error", description: "Could not update the deal." });
+        }
     }
   }
 
@@ -98,7 +121,7 @@ export default function EditDealPage() {
                       <FormItem>
                         <FormLabel>Deal Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. ERP System for AgriMart" {...field} />
+                          <Input placeholder="e.g. ERP System for AgriMart" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -110,7 +133,7 @@ export default function EditDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Customer</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={form.formState.isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a customer" />
@@ -135,7 +158,7 @@ export default function EditDealPage() {
                       <FormItem>
                         <FormLabel>Value (₦)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 7500000" {...field} />
+                          <Input type="number" placeholder="e.g. 7500000" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -147,7 +170,7 @@ export default function EditDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Stage</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={form.formState.isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a deal stage" />
@@ -180,6 +203,7 @@ export default function EditDealPage() {
                                   "w-full pl-3 text-left font-normal",
                                   !field.value && "text-muted-foreground"
                                 )}
+                                disabled={form.formState.isSubmitting}
                               >
                                 {field.value ? (
                                   format(field.value, "PPP")
@@ -208,7 +232,9 @@ export default function EditDealPage() {
                   <Button variant="outline" asChild>
                     <Link href={`/deals/${id}`}>Cancel</Link>
                   </Button>
-                  <Button type="submit">Save Changes</Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
                 </CardFooter>
               </Card>
             </form>

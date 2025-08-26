@@ -1,17 +1,18 @@
 
 "use client"
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getDealById, Deal, getCustomerById, Customer } from '@/lib/data';
+import { Deal, Customer } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const getBadgeVariant = (stage: string) => {
     switch (stage.toLowerCase()) {
@@ -30,30 +31,47 @@ export default function DealDetailsPage() {
     const router = useRouter();
     const params = useParams();
     const { id } = params;
+    const { toast } = useToast();
     const [deal, setDeal] = useState<Deal | null>(null);
     const [customer, setCustomer] = useState<Customer | null>(null);
 
-    useEffect(() => {
+    const fetchDealDetails = useCallback(async () => {
         if (id) {
-            const foundDeal = getDealById(id as string);
-            if (foundDeal) {
+            try {
+                const dealResponse = await fetch(`/api/deals/${id}`);
+                if (!dealResponse.ok) {
+                    throw new Error('Failed to fetch deal');
+                }
+                const foundDeal: Deal = await dealResponse.json();
+
                 // Ensure closeDate is a Date object
                 if (typeof foundDeal.closeDate === 'string') {
                     foundDeal.closeDate = new Date(foundDeal.closeDate);
                 }
                 setDeal(foundDeal);
-                const foundCustomer = getCustomerById(foundDeal.customerId);
-                if (foundCustomer) {
-                    setCustomer(foundCustomer);
+
+                // Fetch customer details
+                const customerResponse = await fetch(`/api/customers/${foundDeal.customerId}`);
+                 if (!customerResponse.ok) {
+                    throw new Error('Failed to fetch customer for the deal');
                 }
-            } else {
-                // Handle case where deal is not found, maybe redirect or show a message
+                const foundCustomer: Customer = await customerResponse.json();
+                setCustomer(foundCustomer);
+
+            } catch (error) {
+                console.error(error);
+                toast({ variant: "destructive", title: "Error", description: "Could not fetch deal details." });
                 router.push('/deals');
             }
         }
-    }, [id, router]);
+    }, [id, router, toast]);
+    
+    useEffect(() => {
+        fetchDealDetails();
+    }, [fetchDealDetails]);
 
-    if (!deal) {
+
+    if (!deal || !customer) {
         return (
             <DashboardLayout>
                 <div className="flex flex-col w-full">
