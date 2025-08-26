@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { useRouter, useParams } from "next/navigation";
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { getCustomerById, updateCustomer } from "@/lib/data";
+import { Customer } from '@/lib/data';
 
 const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -44,28 +44,59 @@ export default function EditCustomerPage() {
     }
   });
 
-  useEffect(() => {
+  const fetchCustomer = useCallback(async () => {
     if (id) {
-        const customer = getCustomerById(id as string);
-        if(customer) {
+        try {
+            const response = await fetch(`/api/customers/${id}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch customer');
+            }
+            const customer: Customer = await response.json();
             form.reset({
               ...customer,
               phone: customer.phone || "", // Ensure phone is not undefined
             });
-        } else {
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not fetch customer details."
+            });
             router.push('/customers');
         }
     }
-  }, [id, form, router]);
+  }, [id, form, router, toast]);
 
-  function onSubmit(data: CustomerFormValues) {
-    if (id) {
-        updateCustomer(id as string, data);
+  useEffect(() => {
+    fetchCustomer();
+  }, [fetchCustomer]);
+
+  async function onSubmit(data: CustomerFormValues) {
+    try {
+        const response = await fetch(`/api/customers/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to update customer');
+        }
+
         toast({
             title: "Customer Updated",
             description: "The customer has been updated successfully.",
         });
         router.push(`/customers/${id}`);
+        router.refresh(); // Refresh to show updated data if the user navigates back
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not update the customer. Please try again.",
+        });
     }
   }
 
@@ -89,7 +120,7 @@ export default function EditCustomerPage() {
                       <FormItem>
                         <FormLabel>Full Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. Adekunle Ciroma" {...field} />
+                          <Input placeholder="e.g. Adekunle Ciroma" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -102,7 +133,7 @@ export default function EditCustomerPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. kunle@techco.ng" {...field} />
+                          <Input placeholder="e.g. kunle@techco.ng" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -115,7 +146,7 @@ export default function EditCustomerPage() {
                       <FormItem>
                         <FormLabel>Phone Number (Optional)</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. +2348012345678" {...field} />
+                          <Input placeholder="e.g. +2348012345678" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -128,7 +159,7 @@ export default function EditCustomerPage() {
                       <FormItem>
                         <FormLabel>Organization</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. TechCo Nigeria" {...field} />
+                          <Input placeholder="e.g. TechCo Nigeria" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -140,7 +171,7 @@ export default function EditCustomerPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={form.formState.isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a status" />
@@ -160,7 +191,9 @@ export default function EditCustomerPage() {
                   <Button variant="outline" asChild>
                     <Link href="/customers">Cancel</Link>
                   </Button>
-                  <Button type="submit">Save Changes</Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+                  </Button>
                 </CardFooter>
               </Card>
             </form>
