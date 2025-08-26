@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getLeads, addLead } from '@/lib/data';
+import { addLead } from '@/lib/data';
 import { z } from 'zod';
 
 const leadFormSchema = z.object({
@@ -8,6 +8,8 @@ const leadFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
   organization: z.string().min(2, { message: "Organization name must be at least 2 characters." }),
   phone: z.string().optional(),
+  ownerId: z.string(),
+  organizationId: z.string(),
 });
 
 export async function GET() {
@@ -25,6 +27,8 @@ export async function POST(request: Request) {
             email: body.email,
             phone: body.phone,
             organization: body.organization,
+            ownerId: body.ownerId,
+            organizationId: body.organizationId,
         });
 
         return NextResponse.json(newLead, { status: 201 });

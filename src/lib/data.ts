@@ -368,10 +368,8 @@ export const getLeads = (): Lead[] => {
     return orgLeads.filter(l => l.ownerId === currentUser.id);
 }
 
-export const addLead = (leadData: { name: string; email: string; organization: string; phone?: string; }) => {
+export const addLead = (leadData: { name: string; email: string; organization: string; phone?: string; ownerId: string, organizationId: string }) => {
     leadsDataStore = initializeData('leads', []);
-    const currentUser = getCurrentUser();
-    if (!currentUser) throw new Error("No logged in user");
 
     const newLead: Lead = {
         id: `L${Date.now()}`,
@@ -381,8 +379,8 @@ export const addLead = (leadData: { name: string; email: string; organization: s
         phone: leadData.phone || undefined,
         createdAt: new Date(),
         status: 'New',
-        ownerId: currentUser.id,
-        organizationId: currentUser.organizationId,
+        ownerId: leadData.ownerId,
+        organizationId: leadData.organizationId,
     };
     leadsDataStore.push(newLead);
     localStorage.setItem('leads', JSON.stringify(leadsDataStore));
