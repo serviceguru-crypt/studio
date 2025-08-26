@@ -8,13 +8,12 @@ import { MetricCard } from '@/components/metric-card';
 import { LineChartCard } from '@/components/charts/line-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
 import { AiSummary } from '@/components/ai-summary';
-import * as data from '@/lib/data';
+import { getDeals, getCustomers, leadsSourceData, recentSales, Deal, Customer } from '@/lib/data';
 import { RecentSales } from '@/components/recent-sales';
 import { Users, DollarSign, Briefcase, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { addDays, isWithinInterval, format, startOfMonth } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
-import type { Deal, Customer } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
@@ -36,10 +35,10 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(() => {
     setIsLoading(true);
-    const deals = data.getDeals();
-    const customers = data.getCustomers();
+    const deals = getDeals();
+    const custs = getCustomers();
     setAllDeals(deals);
-    setCustomers(customers);
+    setCustomers(custs);
     setIsLoading(false);
   }, []);
 
@@ -75,7 +74,7 @@ export default function DashboardPage() {
     if (isLoading || customers.length === 0) return null;
 
     const customersById = new Map(customers.map(c => [c.id, c]));
-    const totalLeads = Array.isArray(data.leadsData) ? data.leadsData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
+    const totalLeads = Array.isArray(leadsSourceData) ? leadsSourceData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
     const activeDealsCount = filteredDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
     
     const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won');
@@ -100,7 +99,7 @@ export default function DashboardPage() {
       totalSales,
       totalLeads,
       activeDealsCount,
-      leadsBySource: data.leadsData,
+      leadsBySource: leadsSourceData,
       dealsData: filteredDeals,
       recentSales: recentSalesData,
     };

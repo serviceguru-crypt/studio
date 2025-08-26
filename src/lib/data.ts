@@ -102,6 +102,13 @@ let dealsData: Deal[] = [
     { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, customerId: 'C008', ownerId: 'U002', closeDate: addDays(today, 20), organizationId: 'O001' },
 ];
 
+export const leadsSourceData = [
+  { name: 'Referral', count: 150, fill: 'hsl(var(--chart-1))' },
+  { name: 'Website', count: 120, fill: 'hsl(var(--chart-2))' },
+  { name: 'Social Media', count: 80, fill: 'hsl(var(--chart-3))' },
+  { name: 'Cold Call', count: 50, fill: 'hsl(var(--chart-4))' },
+  { name: 'Events', count: 30, fill: 'hsl(var(--chart-5))' },
+];
 
 export const recentSales = [
   { name: 'Olivia Martin', email: 'olivia.martin@email.com', amount: 1999.00, avatar: 'https://placehold.co/40x40.png' },
@@ -381,14 +388,3 @@ export const addLead = (leadData: { name: string; email: string; organization: s
     localStorage.setItem('leads', JSON.stringify(leadsDataStore));
     return newLead;
 }
-
-
-export const leadsSourceData = [
-  { name: 'Referral', count: 150, fill: 'hsl(12 76% 61%)' },
-  { name: 'Website', count: 120, fill: 'hsl(173 58% 39%)' },
-  { name: 'Social Media', count: 80, fill: 'hsl(197 37% 24%)' },
-  { name: 'Cold Call', count: 50, fill: 'hsl(43 74% 66%)' },
-  { name: 'Events', count: 30, fill: 'hsl(27 87% 67%)' },
-];
-
-    
