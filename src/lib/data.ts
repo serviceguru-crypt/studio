@@ -231,6 +231,7 @@ export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar' 
 
     const newCustomer: Customer = {
         ...customer,
+        phone: customer.phone || undefined, // Ensure phone is undefined if not provided
         id: `C${Date.now()}`,
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
