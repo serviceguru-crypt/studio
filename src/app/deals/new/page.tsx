@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { addDeal, getCustomers, Customer } from "@/lib/data";
+import { getCustomers, Customer } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -51,13 +51,33 @@ export default function NewDealPage() {
     },
   });
 
-  function onSubmit(data: DealFormValues) {
-    const newDeal = addDeal(data);
-    toast({
-      title: "Deal Created",
-      description: "The new deal has been added successfully.",
-    });
-    router.push(`/deals/${newDeal.id}`);
+  async function onSubmit(data: DealFormValues) {
+    try {
+      const response = await fetch('/api/deals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create deal');
+      }
+
+      const newDeal = await response.json();
+      toast({
+        title: "Deal Created",
+        description: "The new deal has been added successfully.",
+      });
+      router.push(`/deals/${newDeal.id}`);
+
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not create the deal. Please try again.",
+      });
+    }
   }
 
   return (
@@ -80,7 +100,7 @@ export default function NewDealPage() {
                       <FormItem>
                         <FormLabel>Deal Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. ERP System for AgriMart" {...field} />
+                          <Input placeholder="e.g. ERP System for AgriMart" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -92,7 +112,7 @@ export default function NewDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Customer</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={form.formState.isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a customer" />
@@ -117,7 +137,7 @@ export default function NewDealPage() {
                       <FormItem>
                         <FormLabel>Value (₦)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 7500000" {...field} />
+                          <Input type="number" placeholder="e.g. 7500000" {...field} disabled={form.formState.isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -129,7 +149,7 @@ export default function NewDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Stage</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={form.formState.isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a deal stage" />
@@ -162,6 +182,7 @@ export default function NewDealPage() {
                                   "w-full pl-3 text-left font-normal",
                                   !field.value && "text-muted-foreground"
                                 )}
+                                disabled={form.formState.isSubmitting}
                               >
                                 {field.value ? (
                                   format(field.value, "PPP")
@@ -177,6 +198,9 @@ export default function NewDealPage() {
                               mode="single"
                               selected={field.value}
                               onSelect={field.onChange}
+                              disabled={(date) =>
+                                date < new Date("1900-01-01")
+                              }
                               initialFocus
                             />
                           </PopoverContent>
@@ -190,7 +214,9 @@ export default function NewDealPage() {
                   <Button variant="outline" asChild>
                     <Link href="/deals">Cancel</Link>
                   </Button>
-                  <Button type="submit">Add Deal</Button>
+                  <Button type="submit" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Adding...' : 'Add Deal'}
+                  </Button>
                 </CardFooter>
               </Card>
             </form>
