@@ -104,7 +104,6 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
         const storedData = localStorage.getItem(key);
         if (storedData) {
             const parsedData = JSON.parse(storedData, (key, value) => {
-                // Add 'createdAt' date parsing
                 if ((key === 'closeDate' || key === 'date' || key === 'createdAt') && typeof value === 'string') {
                     return new Date(value);
                 }
@@ -169,13 +168,19 @@ export const loginUser = (email: string, password: string): User | null => {
     return null;
 };
 
-const getCurrentUser = (): User | null => {
+export const getCurrentUser = (): User | null => {
     if (typeof window === 'undefined') {
+        // This is a server-side context, try a different approach if needed
+        // For this prototype, we return null as client-side auth is used.
         return null;
     }
     const userJson = localStorage.getItem('currentUser');
     if (!userJson) return null;
-    return JSON.parse(userJson);
+    try {
+        return JSON.parse(userJson);
+    } catch (e) {
+        return null;
+    }
 }
 
 export const getCompanyProfile = (): CompanyProfile | null => {
@@ -196,7 +201,7 @@ export const updateCompanyProfile = (profile: CompanyProfile) => {
 
 // Customer Functions
 export const getCustomers = (): Customer[] => {
-    const allCustomers = initializeData('customers', []);
+    const allCustomers = initializeData('customers', initialCustomersData);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
 
@@ -209,7 +214,7 @@ export const getCustomers = (): Customer[] => {
 };
 
 export const addCustomer = (customerData: { name: string; email: string; organization: string; phone?: string; ownerId: string; organizationId: string; }) => {
-    const allCustomers = initializeData('customers', []);
+    const allCustomers = initializeData('customers', initialCustomersData);
     const newCustomer: Customer = {
         id: `C${Date.now()}`,
         name: customerData.name,
@@ -228,12 +233,12 @@ export const addCustomer = (customerData: { name: string; email: string; organiz
 };
 
 export const getCustomerById = (id: string): Customer | undefined => {
-    const allCustomers = initializeData('customers', []);
+    const allCustomers = initializeData('customers', initialCustomersData);
     return allCustomers.find(customer => customer.id === id);
 }
 
 export const updateCustomer = (id: string, updatedData: Partial<Omit<Customer, 'id' | 'avatar'>>) => {
-    const allCustomers = initializeData('customers', []);
+    const allCustomers = initializeData('customers', initialCustomersData);
     const customerIndex = allCustomers.findIndex(customer => customer.id === id);
     if (customerIndex > -1) {
         allCustomers[customerIndex] = { ...allCustomers[customerIndex], ...updatedData };
@@ -244,14 +249,14 @@ export const updateCustomer = (id: string, updatedData: Partial<Omit<Customer, '
 };
 
 export const deleteCustomer = (id: string) => {
-    let allCustomers = initializeData('customers', []);
+    let allCustomers = initializeData('customers', initialCustomersData);
     allCustomers = allCustomers.filter(customer => customer.id !== id);
     localStorage.setItem('customers', JSON.stringify(allCustomers));
 };
 
 // Deal Functions
 export const getDeals = (): Deal[] => {
-    const allDeals = initializeData('deals', []);
+    const allDeals = initializeData('deals', dealsData);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
     
@@ -264,7 +269,7 @@ export const getDeals = (): Deal[] => {
 };
 
 export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) => {
-    const allDeals = initializeData('deals', []);
+    const allDeals = initializeData('deals', dealsData);
     const currentUser = getCurrentUser();
      if (!currentUser) throw new Error("No logged in user");
     const newDeal: Deal = {
@@ -279,12 +284,12 @@ export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) =
 };
 
 export const getDealById = (id: string): Deal | undefined => {
-    const allDeals = initializeData('deals', []);
+    const allDeals = initializeData('deals', dealsData);
     return allDeals.find(deal => deal.id === id);
 }
 
 export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) => {
-    const allDeals = initializeData('deals', []);
+    const allDeals = initializeData('deals', dealsData);
     const dealIndex = allDeals.findIndex(deal => deal.id === id);
     if (dealIndex > -1) {
         allDeals[dealIndex] = { ...allDeals[dealIndex], ...updatedData };
@@ -295,14 +300,14 @@ export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) =
 };
 
 export const deleteDeal = (id: string) => {
-    let allDeals = initializeData('deals', []);
+    let allDeals = initializeData('deals', dealsData);
     allDeals = allDeals.filter(deal => deal.id !== id);
     localStorage.setItem('deals', JSON.stringify(allDeals));
 };
 
 // Activity Functions
 export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 'date'>) => {
-    const allCustomers = initializeData('customers', []);
+    const allCustomers = initializeData('customers', initialCustomersData);
     const customerIndex = allCustomers.findIndex(c => c.id === customerId);
     if (customerIndex > -1) {
         const newActivity: Activity = {

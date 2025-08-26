@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { User } from "@/lib/data";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -38,24 +37,13 @@ export default function NewCustomerPage() {
   });
 
   async function onSubmit(data: CustomerFormValues) {
-    const userJson = localStorage.getItem('currentUser');
-    if (!userJson) {
-        toast({ variant: "destructive", title: "Error", description: "You must be logged in to create a customer." });
-        return;
-    }
-    const currentUser: User = JSON.parse(userJson);
-
     try {
       const response = await fetch('/api/customers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          ...data,
-          ownerId: currentUser.id,
-          organizationId: currentUser.organizationId,
-        }),
+        body: JSON.stringify(data),
       });
 
       if (!response.ok) {

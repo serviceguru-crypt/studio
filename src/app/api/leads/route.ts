@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { addLead as addLeadData, getLeads } from '@/lib/data';
+import { addLead as addLeadData, getLeads, getCurrentUser } from '@/lib/data';
 import { z } from 'zod';
 
 const leadFormSchema = z.object({
@@ -8,8 +8,6 @@ const leadFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
   organization: z.string().min(2, { message: "Organization name must be at least 2 characters." }),
   phone: z.string().optional(),
-  ownerId: z.string(),
-  organizationId: z.string(),
 });
 
 export async function GET() {
@@ -22,13 +20,19 @@ export async function POST(request: Request) {
         const json = await request.json();
         const body = leadFormSchema.parse(json);
 
+        // This is the correct place to get the current user.
+        const currentUser = getCurrentUser();
+        if (!currentUser) {
+            return NextResponse.json({ error: "User not authenticated" }, { status: 401 });
+        }
+
         const newLead = addLeadData({
             name: body.name,
             email: body.email,
             organization: body.organization,
             phone: body.phone,
-            ownerId: body.ownerId,
-            organizationId: body.organizationId,
+            ownerId: currentUser.id,
+            organizationId: currentUser.organizationId,
         });
 
         return NextResponse.json(newLead, { status: 201 });
