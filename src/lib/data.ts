@@ -78,9 +78,15 @@ export const initialCompanyProfiles: CompanyProfile[] = [
 
 
 export const initialCustomersData: Customer[] = [];
-let dealsData: Deal[] = [];
-export const leadsSourceData = [];
-export const recentSales = [];
+export const dealsData: Deal[] = [];
+export const leadsSourceData: { name: string; count: number; fill: string }[] = [
+    { name: 'Social Media', count: 25, fill: 'var(--color-chart-1)' },
+    { name: 'Website', count: 35, fill: 'var(--color-chart-2)' },
+    { name: 'Referral', count: 15, fill: 'var(--color-chart-3)' },
+    { name: 'Advertisement', count: 20, fill: 'var(--color-chart-4)' },
+    { name: 'Email', count: 5, fill: 'var(--color-chart-5)' },
+];
+export const recentSales: any[] = [];
 
 export const teamPerformance = [
     { name: 'Alice', deals: 12, value: 150000 },
@@ -119,9 +125,6 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
 // Initialize data sources
 let users = initializeData('users', initialUsers);
 let companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
-let customersData = initializeData('customers', initialCustomersData);
-let dealsDataStore = initializeData('deals', dealsData);
-let leadsDataStore = initializeData('leads', [] as Lead[]); // Initialize leads store
 
 export const registerUser = (data: {name: string, email: string, password: string, organizationName: string }) => {
     users = initializeData('users', initialUsers);
@@ -157,8 +160,8 @@ export const registerUser = (data: {name: string, email: string, password: strin
 };
 
 export const loginUser = (email: string, password: string): User | null => {
-    users = initializeData('users', initialUsers);
-    const user = users.find(u => u.email === email && u.password === password);
+    const allUsers = initializeData('users', initialUsers);
+    const user = allUsers.find(u => u.email === email && u.password === password);
     if (user) {
         localStorage.setItem('currentUser', JSON.stringify(user));
         return user;
@@ -178,26 +181,26 @@ const getCurrentUser = (): User | null => {
 export const getCompanyProfile = (): CompanyProfile | null => {
     const user = getCurrentUser();
     if (!user) return null;
-    companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
-    return companyProfiles.find(p => p.id === user.organizationId) || null;
+    const allProfiles = initializeData('companyProfiles', initialCompanyProfiles);
+    return allProfiles.find(p => p.id === user.organizationId) || null;
 }
 
 export const updateCompanyProfile = (profile: CompanyProfile) => {
-    companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
-    const index = companyProfiles.findIndex(p => p.id === profile.id);
+    const allProfiles = initializeData('companyProfiles', initialCompanyProfiles);
+    const index = allProfiles.findIndex(p => p.id === profile.id);
     if (index > -1) {
-        companyProfiles[index] = profile;
-        localStorage.setItem('companyProfiles', JSON.stringify(companyProfiles));
+        allProfiles[index] = profile;
+        localStorage.setItem('companyProfiles', JSON.stringify(allProfiles));
     }
 }
 
 // Customer Functions
 export const getCustomers = (): Customer[] => {
-    customersData = initializeData('customers', initialCustomersData);
+    const allCustomers = initializeData('customers', []);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
 
-    const orgCustomers = customersData.filter(c => c.organizationId === currentUser.organizationId);
+    const orgCustomers = allCustomers.filter(c => c.organizationId === currentUser.organizationId);
 
     if (currentUser.role === 'Admin') {
         return orgCustomers;
@@ -206,7 +209,7 @@ export const getCustomers = (): Customer[] => {
 };
 
 export const addCustomer = (customerData: { name: string; email: string; organization: string; phone?: string; ownerId: string; organizationId: string; }) => {
-    customersData = initializeData('customers', []);
+    const allCustomers = initializeData('customers', []);
     const newCustomer: Customer = {
         id: `C${Date.now()}`,
         name: customerData.name,
@@ -219,39 +222,40 @@ export const addCustomer = (customerData: { name: string; email: string; organiz
         ownerId: customerData.ownerId,
         organizationId: customerData.organizationId,
     };
-    customersData.push(newCustomer);
-    localStorage.setItem('customers', JSON.stringify(customersData));
+    allCustomers.push(newCustomer);
+    localStorage.setItem('customers', JSON.stringify(allCustomers));
     return newCustomer;
 };
 
 export const getCustomerById = (id: string): Customer | undefined => {
-    return initializeData('customers', []).find(customer => customer.id === id);
+    const allCustomers = initializeData('customers', []);
+    return allCustomers.find(customer => customer.id === id);
 }
 
 export const updateCustomer = (id: string, updatedData: Partial<Omit<Customer, 'id' | 'avatar'>>) => {
-    const customers = initializeData('customers', []);
-    const customerIndex = customers.findIndex(customer => customer.id === id);
+    const allCustomers = initializeData('customers', []);
+    const customerIndex = allCustomers.findIndex(customer => customer.id === id);
     if (customerIndex > -1) {
-        customers[customerIndex] = { ...customers[customerIndex], ...updatedData };
-        localStorage.setItem('customers', JSON.stringify(customers));
-        return customers[customerIndex];
+        allCustomers[customerIndex] = { ...allCustomers[customerIndex], ...updatedData };
+        localStorage.setItem('customers', JSON.stringify(allCustomers));
+        return allCustomers[customerIndex];
     }
     return null;
 };
 
 export const deleteCustomer = (id: string) => {
-    let customers = initializeData('customers', []);
-    customers = customers.filter(customer => customer.id !== id);
-    localStorage.setItem('customers', JSON.stringify(customers));
+    let allCustomers = initializeData('customers', []);
+    allCustomers = allCustomers.filter(customer => customer.id !== id);
+    localStorage.setItem('customers', JSON.stringify(allCustomers));
 };
 
 // Deal Functions
 export const getDeals = (): Deal[] => {
-    dealsDataStore = initializeData('deals', []);
+    const allDeals = initializeData('deals', []);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
     
-    const orgDeals = dealsDataStore.filter(d => d.organizationId === currentUser.organizationId);
+    const orgDeals = allDeals.filter(d => d.organizationId === currentUser.organizationId);
 
     if (currentUser.role === 'Admin') {
         return orgDeals;
@@ -260,7 +264,7 @@ export const getDeals = (): Deal[] => {
 };
 
 export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) => {
-    dealsDataStore = initializeData('deals', []);
+    const allDeals = initializeData('deals', []);
     const currentUser = getCurrentUser();
      if (!currentUser) throw new Error("No logged in user");
     const newDeal: Deal = {
@@ -269,59 +273,60 @@ export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) =
         ownerId: currentUser.id,
         organizationId: currentUser.organizationId,
     };
-    dealsDataStore.push(newDeal);
-    localStorage.setItem('deals', JSON.stringify(dealsDataStore));
+    allDeals.push(newDeal);
+    localStorage.setItem('deals', JSON.stringify(allDeals));
     return newDeal;
 };
 
 export const getDealById = (id: string): Deal | undefined => {
-    return initializeData('deals', []).find(deal => deal.id === id);
+    const allDeals = initializeData('deals', []);
+    return allDeals.find(deal => deal.id === id);
 }
 
 export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) => {
-    const deals = initializeData('deals', []);
-    const dealIndex = deals.findIndex(deal => deal.id === id);
+    const allDeals = initializeData('deals', []);
+    const dealIndex = allDeals.findIndex(deal => deal.id === id);
     if (dealIndex > -1) {
-        deals[dealIndex] = { ...deals[dealIndex], ...updatedData };
-        localStorage.setItem('deals', JSON.stringify(deals));
-        return deals[dealIndex];
+        allDeals[dealIndex] = { ...allDeals[dealIndex], ...updatedData };
+        localStorage.setItem('deals', JSON.stringify(allDeals));
+        return allDeals[dealIndex];
     }
     return null;
 };
 
 export const deleteDeal = (id: string) => {
-    let deals = initializeData('deals', []);
-    deals = deals.filter(deal => deal.id !== id);
-    localStorage.setItem('deals', JSON.stringify(deals));
+    let allDeals = initializeData('deals', []);
+    allDeals = allDeals.filter(deal => deal.id !== id);
+    localStorage.setItem('deals', JSON.stringify(allDeals));
 };
 
 // Activity Functions
 export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 'date'>) => {
-    const customers = initializeData('customers', []);
-    const customerIndex = customers.findIndex(c => c.id === customerId);
+    const allCustomers = initializeData('customers', []);
+    const customerIndex = allCustomers.findIndex(c => c.id === customerId);
     if (customerIndex > -1) {
         const newActivity: Activity = {
             ...activity,
             id: `A${Date.now()}`,
             date: new Date(),
         };
-        if (!customers[customerIndex].activity) {
-            customers[customerIndex].activity = [];
+        if (!allCustomers[customerIndex].activity) {
+            allCustomers[customerIndex].activity = [];
         }
-        customers[customerIndex].activity.push(newActivity);
-        localStorage.setItem('customers', JSON.stringify(customers));
-        return customers[customerIndex];
+        allCustomers[customerIndex].activity.push(newActivity);
+        localStorage.setItem('customers', JSON.stringify(allCustomers));
+        return allCustomers[customerIndex];
     }
     return null;
 }
 
 // Lead Functions
 export const getLeads = (): Lead[] => {
-    leadsDataStore = initializeData('leads', []);
+    const allLeads = initializeData('leads', []);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
 
-    const orgLeads = leadsDataStore.filter(l => l.organizationId === currentUser.organizationId);
+    const orgLeads = allLeads.filter(l => l.organizationId === currentUser.organizationId);
 
     if (currentUser.role === 'Admin') {
         return orgLeads;
@@ -330,7 +335,7 @@ export const getLeads = (): Lead[] => {
 }
 
 export const addLead = (leadData: { name: string; email: string; organization: string; phone?: string; ownerId: string, organizationId: string }) => {
-    leadsDataStore = initializeData('leads', []);
+    const allLeads = initializeData('leads', []);
 
     const newLead: Lead = {
         id: `L${Date.now()}`,
@@ -343,7 +348,7 @@ export const addLead = (leadData: { name: string; email: string; organization: s
         ownerId: leadData.ownerId,
         organizationId: leadData.organizationId,
     };
-    leadsDataStore.push(newLead);
-    localStorage.setItem('leads', JSON.stringify(leadsDataStore));
+    allLeads.push(newLead);
+    localStorage.setItem('leads', JSON.stringify(allLeads));
     return newLead;
 }
