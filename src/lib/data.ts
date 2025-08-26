@@ -224,14 +224,16 @@ export const getCustomers = (): Customer[] => {
 };
 
 // Helper to add a customer to local storage
-export const addCustomer = (customer: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity' | 'ownerId' | 'organizationId'>) => {
+export const addCustomer = (customer: { name: string; email: string; organization: string; phone?: string; }) => {
     customersData = initializeData('customers', initialCustomersData); // Ensure customersData is fresh
     const currentUser = getCurrentUser();
     if (!currentUser) throw new Error("No logged in user");
 
     const newCustomer: Customer = {
-        ...customer,
-        phone: customer.phone || undefined, // Ensure phone is undefined if not provided
+        name: customer.name,
+        email: customer.email,
+        organization: customer.organization,
+        phone: customer.phone || undefined, // Ensure phone is undefined if not provided or empty
         id: `C${Date.now()}`,
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
@@ -342,3 +344,5 @@ export const leadsData = [
   { name: 'Cold Call', count: 50, fill: 'hsl(43 74% 66%)' },
   { name: 'Events', count: 30, fill: 'hsl(27 87% 67%)' },
 ];
+
+    
