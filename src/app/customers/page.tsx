@@ -37,7 +37,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { deleteCustomer, Customer, User, users } from '@/lib/data';
+import { Customer, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -126,15 +126,32 @@ export default function CustomersPage() {
     exportToCsv('customers.csv', dataToExport);
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (customerToDelete) {
-        deleteCustomer(customerToDelete);
-        toast({
-            title: "Customer Deleted",
-            description: "The customer has been successfully deleted.",
-        });
-        setCustomerToDelete(null);
-        fetchCustomers(); // Re-fetch to update the list
+        try {
+            const response = await fetch(`/api/customers/${customerToDelete}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete customer');
+            }
+            
+            toast({
+                title: "Customer Deleted",
+                description: "The customer has been successfully deleted.",
+            });
+            fetchCustomers(); // Re-fetch to update the list
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not delete the customer. Please try again.",
+            });
+        } finally {
+            setCustomerToDelete(null);
+        }
     }
   };
 
@@ -305,5 +322,7 @@ export default function CustomersPage() {
     </DashboardLayout>
   );
 }
+
+    
 
     
