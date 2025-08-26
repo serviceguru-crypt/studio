@@ -335,9 +335,9 @@ export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 
 }
 
 export const leadsData = [
-  { name: 'Referral', count: 150, fill: 'var(--color-chart-1)' },
-  { name: 'Website', count: 120, fill: 'var(--color-chart-2)' },
-  { name: 'Social Media', count: 80, fill: 'var(--color-chart-3)' },
-  { name: 'Cold Call', count: 50, fill: 'var(--color-chart-4)' },
-  { name: 'Events', count: 30, fill: 'var(--color-chart-5)' },
+  { name: 'Referral', count: 150, fill: 'hsl(12 76% 61%)' },
+  { name: 'Website', count: 120, fill: 'hsl(173 58% 39%)' },
+  { name: 'Social Media', count: 80, fill: 'hsl(197 37% 24%)' },
+  { name: 'Cold Call', count: 50, fill: 'hsl(43 74% 66%)' },
+  { name: 'Events', count: 30, fill: 'hsl(27 87% 67%)' },
 ];

@@ -11,8 +11,12 @@ interface PieChartCardProps {
 
 export function PieChartCard({ data }: PieChartCardProps) {
     const chartData = Array.isArray(data) ? data : [];
+    
+    // Create a config for the tooltip and legend.
     const chartConfig = chartData.reduce((acc, item) => {
+        // Create a key from the item name, e.g., "Social Media" -> "socialmedia"
         const key = item.name.toLowerCase().replace(/ /g, '');
+        // Use the fill color directly from the data
         acc[key] = { label: item.name, color: item.fill };
         return acc;
     }, {} as any) satisfies ChartConfig;
@@ -29,10 +33,10 @@ export function PieChartCard({ data }: PieChartCardProps) {
                         <Tooltip content={<ChartTooltipContent nameKey="name" />} />
                         <Legend />
                         <Pie data={chartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                            {chartData.map((entry) => (
+                            {chartData.map((entry, index) => (
                                 <Cell 
-                                    key={`cell-${entry.name}`} 
-                                    fill={chartConfig[entry.name.toLowerCase().replace(/ /g, '')]?.color} 
+                                    key={`cell-${index}`} 
+                                    fill={entry.fill} // Use the direct fill color from the data
                                 />
                             ))}
                         </Pie>
