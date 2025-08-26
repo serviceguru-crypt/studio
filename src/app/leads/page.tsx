@@ -6,7 +6,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Upload } from 'lucide-react';
+import { PlusCircle, Upload, MoreHorizontal } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -14,15 +14,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { z } from "zod";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { Lead } from '@/lib/data';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const leadFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -33,9 +43,8 @@ const leadFormSchema = z.object({
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
 
-function AddLeadDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onOpenChange: (open: boolean) => void, onLeadAdded: () => void }) {
     const { toast } = useToast();
-    const router = useRouter();
     const form = useForm<LeadFormValues>({
         resolver: zodResolver(leadFormSchema),
         defaultValues: {
@@ -48,23 +57,22 @@ function AddLeadDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (o
 
     async function onSubmit(data: LeadFormValues) {
         try {
-            const response = await fetch('/api/customers', {
+            const response = await fetch('/api/leads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
             });
             if (!response.ok) {
-                throw new Error('Failed to create lead as customer');
+                throw new Error('Failed to create lead');
             }
-            const newCustomer = await response.json();
             
             toast({
-                title: "Lead Converted to Customer",
-                description: `${data.name} has been successfully added as a new customer.`,
+                title: "Lead Added",
+                description: `${data.name} has been successfully added as a new lead.`,
             });
             onOpenChange(false);
             form.reset();
-            router.push(`/customers/${newCustomer.id}`);
+            onLeadAdded(); // Callback to refresh the leads list
         } catch (error) {
             console.error(error);
             toast({
@@ -81,7 +89,7 @@ function AddLeadDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (o
                 <DialogHeader>
                     <DialogTitle>Add New Lead</DialogTitle>
                     <DialogDescription>
-                        Fill in the details below to add a new lead. This will create a new customer record.
+                        Fill in the details below to add a new lead.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -153,7 +161,34 @@ function AddLeadDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (o
 
 export default function LeadsPage() {
     const [isAddLeadOpen, setIsAddLeadOpen] = React.useState(false);
+    const [leads, setLeads] = React.useState<Lead[]>([]);
+    const [isLoading, setIsLoading] = React.useState(true);
     const { toast } = useToast();
+
+    const fetchLeads = React.useCallback(async () => {
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/leads');
+            if (!response.ok) {
+                throw new Error('Failed to fetch leads');
+            }
+            const data = await response.json();
+            setLeads(data);
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not fetch leads.'
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    }, [toast]);
+
+    React.useEffect(() => {
+        fetchLeads();
+    }, [fetchLeads]);
 
     const handleImport = () => {
         toast({
@@ -192,19 +227,76 @@ export default function LeadsPage() {
                 <CardHeader>
                     <CardTitle>Lead Pipeline</CardTitle>
                     <CardDescription>
-                        This section is under construction. Future updates will show a table of all your leads.
+                        A list of all potential customers.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-center py-20 border-2 border-dashed rounded-lg">
-                        <p className="text-muted-foreground">Lead management table coming soon.</p>
-                        <Button variant="link" className="mt-2" onClick={() => setIsAddLeadOpen(true)}>Add your first lead</Button>
-                    </div>
+                    {isLoading ? (
+                        <Table>
+                           <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Organization</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden md:table-cell">Created</TableHead>
+                                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {[...Array(5)].map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Organization</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="hidden md:table-cell">Created</TableHead>
+                                <TableHead><span className="sr-only">Actions</span></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {leads.map(lead => (
+                                <TableRow key={lead.id}>
+                                    <TableCell className="font-medium">
+                                        <div>{lead.name}</div>
+                                        <div className="text-sm text-muted-foreground">{lead.email}</div>
+                                    </TableCell>
+                                    <TableCell>{lead.organization}</TableCell>
+                                    <TableCell><Badge variant="secondary">{lead.status}</Badge></TableCell>
+                                    <TableCell className="hidden md:table-cell">{format(new Date(lead.createdAt), 'PP')}</TableCell>
+                                    <TableCell>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Toggle menu</span>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    )}
+                    {!isLoading && leads.length === 0 && (
+                         <div className="text-center py-20 border-2 border-dashed rounded-lg">
+                            <p className="text-muted-foreground">You have no leads yet.</p>
+                            <Button variant="link" className="mt-2" onClick={() => setIsAddLeadOpen(true)}>Add your first lead</Button>
+                        </div>
+                    )}
                 </CardContent>
              </Card>
         </main>
       </div>
-      <AddLeadDialog open={isAddLeadOpen} onOpenChange={setIsAddLeadOpen} />
+      <AddLeadDialog open={isAddLeadOpen} onOpenChange={setIsAddLeadOpen} onLeadAdded={fetchLeads} />
     </DashboardLayout>
   );
 }

@@ -20,6 +20,18 @@ export type CompanyProfile = {
     logo: string;
 }
 
+export type Lead = {
+    id: string;
+    name: string;
+    email: string;
+    organization: string;
+    phone?: string;
+    createdAt: Date;
+    status: 'New' | 'Contacted' | 'Qualified' | 'Disqualified';
+    ownerId: string;
+    organizationId: string;
+}
+
 export type Deal = {
     id: string;
     name:string;
@@ -115,10 +127,8 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
         const storedData = localStorage.getItem(key);
         if (storedData) {
             const parsedData = JSON.parse(storedData, (key, value) => {
-                if (key === 'closeDate' && typeof value === 'string') {
-                    return new Date(value);
-                }
-                if (key === 'date' && typeof value === 'string') {
+                // Add 'createdAt' date parsing
+                if ((key === 'closeDate' || key === 'date' || key === 'createdAt') && typeof value === 'string') {
                     return new Date(value);
                 }
                 return value;
@@ -140,6 +150,7 @@ let users = initializeData('users', initialUsers);
 let companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
 let customersData = initializeData('customers', initialCustomersData);
 let dealsDataStore = initializeData('deals', dealsData);
+let leadsDataStore = initializeData('leads', [] as Lead[]); // Initialize leads store
 
 export const registerUser = (data: {name: string, email: string, password: string, organizationName: string }) => {
     users = initializeData('users', initialUsers);
@@ -209,8 +220,7 @@ export const updateCompanyProfile = (profile: CompanyProfile) => {
     }
 }
 
-
-// Helper to get customers from local storage
+// Customer Functions
 export const getCustomers = (): Customer[] => {
     customersData = initializeData('customers', initialCustomersData);
     const currentUser = getCurrentUser();
@@ -224,23 +234,20 @@ export const getCustomers = (): Customer[] => {
     return orgCustomers.filter(c => c.ownerId === currentUser.id);
 };
 
-// Helper to add a customer to local storage
-export const addCustomer = (customer: { name: string; email: string; organization: string; phone?: string; }) => {
-    customersData = initializeData('customers', initialCustomersData); // Ensure customersData is fresh
+export const addCustomer = (customerData: { name: string; email: string; organization: string; phone?: string; }) => {
+    customersData = initializeData('customers', initialCustomersData);
     const currentUser = getCurrentUser();
     if (!currentUser) throw new Error("No logged in user");
 
     const newCustomer: Customer = {
-        name: customer.name,
-        email: customer.email,
-        organization: customer.organization,
-        phone: customer.phone || undefined,
+        ...customerData,
         id: `C${Date.now()}`,
         status: 'Active',
-        avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
+        avatar: `https://placehold.co/40x40.png?text=${customerData.name.charAt(0)}`,
         activity: [],
         ownerId: currentUser.id,
         organizationId: currentUser.organizationId,
+        phone: customerData.phone || undefined,
     };
     customersData.push(newCustomer);
     localStorage.setItem('customers', JSON.stringify(customersData));
@@ -268,7 +275,7 @@ export const deleteCustomer = (id: string) => {
     localStorage.setItem('customers', JSON.stringify(customers));
 };
 
-// Helper to get deals from local storage
+// Deal Functions
 export const getDeals = (): Deal[] => {
     dealsDataStore = initializeData('deals', dealsData);
     const currentUser = getCurrentUser();
@@ -282,9 +289,8 @@ export const getDeals = (): Deal[] => {
     return orgDeals.filter(d => d.ownerId === currentUser.id);
 };
 
-// Helper to add a deal to local storage
 export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) => {
-    dealsDataStore = initializeData('deals', dealsData); // Ensure dealsDataStore is fresh
+    dealsDataStore = initializeData('deals', dealsData);
     const currentUser = getCurrentUser();
      if (!currentUser) throw new Error("No logged in user");
     const newDeal: Deal = {
@@ -319,6 +325,7 @@ export const deleteDeal = (id: string) => {
     localStorage.setItem('deals', JSON.stringify(deals));
 };
 
+// Activity Functions
 export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 'date'>) => {
     const customers = initializeData('customers', initialCustomersData);
     const customerIndex = customers.findIndex(c => c.id === customerId);
@@ -338,7 +345,41 @@ export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 
     return null;
 }
 
-export const leadsData = [
+// Lead Functions
+export const getLeads = (): Lead[] => {
+    leadsDataStore = initializeData('leads', []);
+    const currentUser = getCurrentUser();
+    if (!currentUser) return [];
+
+    const orgLeads = leadsDataStore.filter(l => l.organizationId === currentUser.organizationId);
+
+    if (currentUser.role === 'Admin') {
+        return orgLeads;
+    }
+    return orgLeads.filter(l => l.ownerId === currentUser.id);
+}
+
+export const addLead = (leadData: { name: string; email: string; organization: string; phone?: string; }) => {
+    leadsDataStore = initializeData('leads', []);
+    const currentUser = getCurrentUser();
+    if (!currentUser) throw new Error("No logged in user");
+
+    const newLead: Lead = {
+        ...leadData,
+        id: `L${Date.now()}`,
+        createdAt: new Date(),
+        status: 'New',
+        ownerId: currentUser.id,
+        organizationId: currentUser.organizationId,
+        phone: leadData.phone || undefined,
+    };
+    leadsDataStore.push(newLead);
+    localStorage.setItem('leads', JSON.stringify(leadsDataStore));
+    return newLead;
+}
+
+
+export const leadsSourceData = [
   { name: 'Referral', count: 150, fill: 'hsl(12 76% 61%)' },
   { name: 'Website', count: 120, fill: 'hsl(173 58% 39%)' },
   { name: 'Social Media', count: 80, fill: 'hsl(197 37% 24%)' },
