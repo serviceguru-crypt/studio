@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { addCustomer } from "@/lib/data";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -37,13 +36,36 @@ export default function NewCustomerPage() {
     },
   });
 
-  function onSubmit(data: CustomerFormValues) {
-    const newCustomer = addCustomer(data);
-    toast({
-      title: "Customer Created",
-      description: "The new customer has been added successfully.",
-    });
-    router.push(`/customers/${newCustomer.id}`);
+  async function onSubmit(data: CustomerFormValues) {
+    try {
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create customer');
+      }
+
+      const newCustomer = await response.json();
+      
+      toast({
+        title: "Customer Created",
+        description: "The new customer has been added successfully.",
+      });
+      router.push(`/customers/${newCustomer.id}`);
+
+    } catch (error) {
+      console.error(error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not create the customer. Please try again.",
+      });
+    }
   }
 
   return (
@@ -66,7 +88,7 @@ export default function NewCustomerPage() {
                                     <FormItem>
                                         <FormLabel>Full Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. Adekunle Ciroma" {...field} />
+                                            <Input placeholder="e.g. Adekunle Ciroma" {...field} disabled={form.formState.isSubmitting} />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -79,7 +101,7 @@ export default function NewCustomerPage() {
                                     <FormItem>
                                         <FormLabel>Email</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. kunle@techco.ng" {...field} />
+                                            <Input placeholder="e.g. kunle@techco.ng" {...field} disabled={form.formState.isSubmitting}/>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -92,7 +114,7 @@ export default function NewCustomerPage() {
                                     <FormItem>
                                         <FormLabel>Phone Number (Optional)</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. +2348012345678" {...field} />
+                                            <Input placeholder="e.g. +2348012345678" {...field} disabled={form.formState.isSubmitting}/>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -105,7 +127,7 @@ export default function NewCustomerPage() {
                                     <FormItem>
                                         <FormLabel>Organization</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="e.g. TechCo Nigeria" {...field} />
+                                            <Input placeholder="e.g. TechCo Nigeria" {...field} disabled={form.formState.isSubmitting}/>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -116,7 +138,9 @@ export default function NewCustomerPage() {
                             <Button variant="outline" asChild>
                                 <Link href="/customers">Cancel</Link>
                             </Button>
-                            <Button type="submit">Add Customer</Button>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>
+                                {form.formState.isSubmitting ? "Adding..." : "Add Customer"}
+                            </Button>
                         </CardFooter>
                     </Card>
                 </form>
