@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy, Calendar, Building } from 'lucide-react';
+import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy, Calendar, Building, UserPlus } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -21,6 +21,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/deals', label: 'Deals', icon: Briefcase },
+  { href: '/leads', label: 'Leads', icon: UserPlus },
   { href: '/analytics', label: 'Analytics', icon: BarChart },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
 ];
@@ -55,7 +56,7 @@ export function AppSidebar() {
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.label}>
-              <SidebarMenuButton asChild isActive={pathname === item.href} tooltip={{children: item.label, side:"right"}}>
+              <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)} tooltip={{children: item.label, side:"right"}}>
                 <Link href={item.href}>
                   <item.icon />
                   <span>{item.label}</span>
