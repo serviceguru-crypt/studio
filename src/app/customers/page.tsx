@@ -37,16 +37,18 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { getCustomers, deleteCustomer, Customer, User, users } from '@/lib/data';
+import { deleteCustomer, Customer, User, users } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { exportToCsv } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CustomersPage() {
   const [allCustomers, setAllCustomers] = React.useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = React.useState<Customer[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState('all');
   const [searchTerm, setSearchTerm] = React.useState('');
   const [customerToDelete, setCustomerToDelete] = React.useState<string | null>(null);
@@ -61,10 +63,26 @@ export default function CustomersPage() {
     }
   }, []);
 
-  const fetchCustomers = React.useCallback(() => {
-    const customers = getCustomers();
-    setAllCustomers(customers);
-  }, []);
+  const fetchCustomers = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const response = await fetch('/api/customers');
+        if (!response.ok) {
+            throw new Error('Failed to fetch customers');
+        }
+        const customers = await response.json();
+        setAllCustomers(customers);
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not fetch customers.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [toast]);
 
   React.useEffect(() => {
     fetchCustomers();
@@ -120,7 +138,6 @@ export default function CustomersPage() {
     }
   };
 
-
   return (
     <DashboardLayout>
       <div className="flex flex-col w-full">
@@ -168,6 +185,32 @@ export default function CustomersPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
+                    {isLoading ? (
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="hidden w-[100px] sm:table-cell"><span className="sr-only">Image</span></TableHead>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="hidden md:table-cell">Organization</TableHead>
+                                    <TableHead className="hidden md:table-cell">Email</TableHead>
+                                    <TableHead><span className="sr-only">Actions</span></TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {[...Array(5)].map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-9 w-9 rounded-full" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+                                        <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
+                                        <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                         </Table>
+                    ) : (
                     <Table>
                         <TableHeader>
                         <TableRow>
@@ -231,7 +274,8 @@ export default function CustomersPage() {
                         ))}
                         </TableBody>
                     </Table>
-                     {filteredCustomers.length === 0 && (
+                    )}
+                     {filteredCustomers.length === 0 && !isLoading && (
                         <div className="text-center py-10">
                             <p className="text-muted-foreground">No customers found matching your criteria.</p>
                         </div>
@@ -261,3 +305,5 @@ export default function CustomersPage() {
     </DashboardLayout>
   );
 }
+
+    
