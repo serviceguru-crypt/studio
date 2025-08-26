@@ -1,5 +1,4 @@
 
-
 import { addDays } from 'date-fns';
 
 export type Role = 'Admin' | 'Sales Rep';
@@ -43,6 +42,7 @@ export type Deal = {
     leadScore?: 'Hot' | 'Warm' | 'Cold';
     justification?: string;
     organizationId: string;
+    company?: string;
 }
 
 export type Activity = {
@@ -240,14 +240,16 @@ export const addCustomer = (customerData: { name: string; email: string; organiz
     if (!currentUser) throw new Error("No logged in user");
 
     const newCustomer: Customer = {
-        ...customerData,
         id: `C${Date.now()}`,
+        name: customerData.name,
+        email: customerData.email,
+        organization: customerData.organization,
+        phone: customerData.phone || undefined,
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customerData.name.charAt(0)}`,
         activity: [],
         ownerId: currentUser.id,
         organizationId: currentUser.organizationId,
-        phone: customerData.phone || undefined,
     };
     customersData.push(newCustomer);
     localStorage.setItem('customers', JSON.stringify(customersData));
@@ -365,13 +367,15 @@ export const addLead = (leadData: { name: string; email: string; organization: s
     if (!currentUser) throw new Error("No logged in user");
 
     const newLead: Lead = {
-        ...leadData,
         id: `L${Date.now()}`,
+        name: leadData.name,
+        email: leadData.email,
+        organization: leadData.organization,
+        phone: leadData.phone || undefined,
         createdAt: new Date(),
         status: 'New',
         ownerId: currentUser.id,
         organizationId: currentUser.organizationId,
-        phone: leadData.phone || undefined,
     };
     leadsDataStore.push(newLead);
     localStorage.setItem('leads', JSON.stringify(leadsDataStore));
@@ -386,3 +390,5 @@ export const leadsSourceData = [
   { name: 'Cold Call', count: 50, fill: 'hsl(43 74% 66%)' },
   { name: 'Events', count: 30, fill: 'hsl(27 87% 67%)' },
 ];
+
+    
