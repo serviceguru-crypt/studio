@@ -15,12 +15,20 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { getCustomers, Customer } from "@/lib/data";
+import { Customer } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronsUpDown, Check } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 
 const dealFormSchema = z.object({
   name: z.string().min(3, { message: "Deal name must be at least 3 characters." }),
@@ -38,9 +46,21 @@ export default function NewDealPage() {
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   
   React.useEffect(() => {
-    // In a real app, you might want to fetch all customers if the user is an admin
-    setCustomers(getCustomers());
-  }, []);
+    async function fetchCustomers() {
+        try {
+            const response = await fetch('/api/customers');
+            if (!response.ok) {
+                throw new Error('Failed to fetch customers');
+            }
+            const data = await response.json();
+            setCustomers(data);
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customers.' });
+        }
+    }
+    fetchCustomers();
+  }, [toast]);
 
   const form = useForm<DealFormValues>({
     resolver: zodResolver(dealFormSchema),
@@ -110,22 +130,58 @@ export default function NewDealPage() {
                     control={form.control}
                     name="customerId"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="flex flex-col">
                         <FormLabel>Customer</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={form.formState.isSubmitting}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a customer" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {customers.map(customer => (
-                                <SelectItem key={customer.id} value={customer.id}>
-                                    {customer.name} ({customer.organization})
-                                </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className={cn(
+                                    "w-full justify-between",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value
+                                    ? customers.find(
+                                        (customer) => customer.id === field.value
+                                    )?.name
+                                    : "Select customer"}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                                <Command>
+                                <CommandInput placeholder="Search customers..." />
+                                 <CommandList>
+                                    <CommandEmpty>No customer found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {customers.map((customer) => (
+                                        <CommandItem
+                                            value={customer.name}
+                                            key={customer.id}
+                                            onSelect={() => {
+                                                form.setValue("customerId", customer.id)
+                                            }}
+                                        >
+                                            <Check
+                                            className={cn(
+                                                "mr-2 h-4 w-4",
+                                                customer.id === field.value
+                                                ? "opacity-100"
+                                                : "opacity-0"
+                                            )}
+                                            />
+                                            {customer.name} ({customer.organization})
+                                        </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                 </CommandList>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
