@@ -25,8 +25,8 @@ export async function POST(request: Request) {
         const newLead = addLeadData({
             name: body.name,
             email: body.email,
-            phone: body.phone,
             organization: body.organization,
+            phone: body.phone,
             ownerId: body.ownerId,
             organizationId: body.organizationId,
         });
@@ -35,9 +35,10 @@ export async function POST(request: Request) {
 
     } catch (error) {
         if (error instanceof z.ZodError) {
+            console.error('Zod validation error in /api/leads:', error.issues);
             return NextResponse.json({ error: error.issues }, { status: 400 });
         }
-        console.error('Failed to create lead:', error);
+        console.error('Failed to create lead in /api/leads:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

@@ -37,9 +37,10 @@ export async function POST(request: Request) {
 
     } catch (error) {
         if (error instanceof z.ZodError) {
+            console.error('Zod validation error in /api/customers:', error.issues);
             return NextResponse.json({ error: error.issues }, { status: 400 });
         }
-        console.error('Failed to create customer:', error);
+        console.error('Failed to create customer in /api/customers:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
