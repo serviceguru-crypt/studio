@@ -22,7 +22,6 @@ import { z } from "zod";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { createLead } from '@/ai/flows/create-lead-flow';
 import { useRouter } from 'next/navigation';
 
 const leadFormSchema = z.object({
@@ -49,7 +48,16 @@ function AddLeadDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (o
 
     async function onSubmit(data: LeadFormValues) {
         try {
-            const newCustomer = await createLead(data);
+            const response = await fetch('/api/customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to create lead as customer');
+            }
+            const newCustomer = await response.json();
+            
             toast({
                 title: "Lead Converted to Customer",
                 description: `${data.name} has been successfully added as a new customer.`,
