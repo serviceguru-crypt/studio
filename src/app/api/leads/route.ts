@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { addLead, getLeads } from '@/lib/data';
+import { addLead as addLeadData, getLeads } from '@/lib/data';
 import { z } from 'zod';
 
 const leadFormSchema = z.object({
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
         const json = await request.json();
         const body = leadFormSchema.parse(json);
 
-        const newLead = addLead({
+        const newLead = addLeadData({
             name: body.name,
             email: body.email,
             phone: body.phone,
