@@ -29,7 +29,7 @@ import { z } from "zod";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { Lead } from '@/lib/data';
+import { Lead, User } from '@/lib/data';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -57,13 +57,25 @@ function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onO
 
     async function onSubmit(data: LeadFormValues) {
         try {
+            const userJson = localStorage.getItem('currentUser');
+            if (!userJson) {
+                throw new Error("User not found");
+            }
+            const currentUser: User = JSON.parse(userJson);
+
             const response = await fetch('/api/leads', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify({
+                    ...data,
+                    ownerId: currentUser.id,
+                    organizationId: currentUser.organizationId,
+                }),
             });
             if (!response.ok) {
-                throw new Error('Failed to create lead');
+                 const errorData = await response.json();
+                 console.error('API Error:', errorData);
+                throw new Error('Failed to create lead.');
             }
             
             toast({
