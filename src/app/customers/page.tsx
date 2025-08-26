@@ -37,7 +37,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Customer, User } from '@/lib/data';
+import { Customer, getCustomers, deleteCustomer as deleteCustomerFromDb, User } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -63,14 +63,10 @@ export default function CustomersPage() {
     }
   }, []);
 
-  const fetchCustomers = React.useCallback(async () => {
+  const fetchCustomers = React.useCallback(() => {
     setIsLoading(true);
     try {
-        const response = await fetch('/api/customers');
-        if (!response.ok) {
-            throw new Error('Failed to fetch customers');
-        }
-        const customers = await response.json();
+        const customers = getCustomers();
         setAllCustomers(customers);
     } catch (error) {
         console.error(error);
@@ -126,17 +122,10 @@ export default function CustomersPage() {
     exportToCsv('customers.csv', dataToExport);
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (customerToDelete) {
         try {
-            const response = await fetch(`/api/customers/${customerToDelete}`, {
-                method: 'DELETE',
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to delete customer');
-            }
-            
+            deleteCustomerFromDb(customerToDelete);
             toast({
                 title: "Customer Deleted",
                 description: "The customer has been successfully deleted.",
@@ -322,7 +311,3 @@ export default function CustomersPage() {
     </DashboardLayout>
   );
 }
-
-    
-
-    

@@ -55,24 +55,19 @@ export default function CustomerDetailsPage() {
         },
     });
 
-    const fetchCustomer = useCallback(async () => {
+    const fetchCustomer = useCallback(() => {
         if (id) {
             try {
-                const response = await fetch(`/api/customers/${id}`);
-                if (!response.ok) {
-                    if (response.status === 404) {
-                         toast({
-                            variant: "destructive",
-                            title: "Customer not found",
-                            description: "The customer you are looking for does not exist.",
-                        });
-                    } else {
-                        throw new Error(`Failed to fetch customer. Status: ${response.status}`);
-                    }
+                const data = getCustomerById(id as string);
+                if (!data) {
+                    toast({
+                        variant: "destructive",
+                        title: "Customer not found",
+                        description: "The customer you are looking for does not exist.",
+                    });
                     router.push('/customers');
                     return;
                 }
-                const data: Customer = await response.json();
                 
                 // API response for activity dates might be strings
                 if (data.activity) {

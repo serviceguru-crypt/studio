@@ -38,7 +38,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Deal, Customer, User } from '@/lib/data';
+import { Deal, Customer, getDeals as getDealsFromDb, getCustomers, deleteDeal as deleteDealFromDb, updateDeal, User } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { exportToCsv } from '@/lib/utils';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
@@ -96,24 +96,17 @@ export default function DealsPage() {
     }
   }, []);
 
-  const fetchDeals = React.useCallback(async () => {
+  const fetchDeals = React.useCallback(() => {
     setIsLoading(true);
     try {
-        const response = await fetch('/api/deals');
-        if (!response.ok) {
-            throw new Error('Failed to fetch deals');
-        }
-        let dealsFromApi: DealWithScore[] = await response.json();
+        let dealsFromApi: DealWithScore[] = getDealsFromDb();
         
-        // The API returns date strings, so we need to convert them to Date objects
         dealsFromApi = dealsFromApi.map(deal => ({
             ...deal,
             closeDate: new Date(deal.closeDate) 
         }));
 
-        // The API doesn't include organization, so we need a separate fetch for customers
-        const customerResponse = await fetch('/api/customers');
-        const customers: Customer[] = await customerResponse.json();
+        const customers: Customer[] = getCustomers();
         const customersById = new Map(customers.map(c => [c.id, c]));
 
         const dealsWithOrganization = dealsFromApi.map(deal => ({
@@ -151,14 +144,8 @@ export default function DealsPage() {
             stage: dealToScore.stage,
         });
 
-        // Update the deal in the backend
-        await fetch(`/api/deals/${dealToScore.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ leadScore: result.leadScore, justification: result.justification })
-        });
+        updateDeal(dealToScore.id, { leadScore: result.leadScore, justification: result.justification });
         
-        // Update the state locally for immediate feedback
         setAllDeals(prevDeals => 
             prevDeals.map(d => 
                 d.id === dealToScore.id 
@@ -213,15 +200,10 @@ export default function DealsPage() {
     exportToCsv('deals.csv', dataToExport);
   }
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (dealToDelete) {
         try {
-            const response = await fetch(`/api/deals/${dealToDelete}`, {
-                method: 'DELETE',
-            });
-            if (!response.ok) {
-                throw new Error('Failed to delete deal');
-            }
+            deleteDealFromDb(dealToDelete);
             toast({
                 title: "Deal Deleted",
                 description: "The deal has been successfully deleted.",
@@ -423,4 +405,3 @@ export default function DealsPage() {
     </DashboardLayout>
   );
 }
-

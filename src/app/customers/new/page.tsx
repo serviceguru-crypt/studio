@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { addCustomer, getCurrentUser } from "@/lib/data";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -38,19 +39,16 @@ export default function NewCustomerPage() {
 
   async function onSubmit(data: CustomerFormValues) {
     try {
-      const response = await fetch('/api/customers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create customer');
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+          throw new Error("User not authenticated");
       }
-
-      const newCustomer = await response.json();
+      
+      const newCustomer = addCustomer({
+        ...data,
+        ownerId: currentUser.id,
+        organizationId: currentUser.organizationId
+      });
       
       toast({
         title: "Customer Created",

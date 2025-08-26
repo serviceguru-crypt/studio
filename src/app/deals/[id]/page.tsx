@@ -7,7 +7,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Deal, Customer } from '@/lib/data';
+import { Deal, Customer, getDealById, getCustomerById } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
@@ -35,27 +35,23 @@ export default function DealDetailsPage() {
     const [deal, setDeal] = useState<Deal | null>(null);
     const [customer, setCustomer] = useState<Customer | null>(null);
 
-    const fetchDealDetails = useCallback(async () => {
+    const fetchDealDetails = useCallback(() => {
         if (id) {
             try {
-                const dealResponse = await fetch(`/api/deals/${id}`);
-                if (!dealResponse.ok) {
+                const foundDeal = getDealById(id as string);
+                if (!foundDeal) {
                     throw new Error('Failed to fetch deal');
                 }
-                const foundDeal: Deal = await dealResponse.json();
 
-                // Ensure closeDate is a Date object
                 if (typeof foundDeal.closeDate === 'string') {
                     foundDeal.closeDate = new Date(foundDeal.closeDate);
                 }
                 setDeal(foundDeal);
 
-                // Fetch customer details
-                const customerResponse = await fetch(`/api/customers/${foundDeal.customerId}`);
-                 if (!customerResponse.ok) {
+                const foundCustomer = getCustomerById(foundDeal.customerId);
+                if (!foundCustomer) {
                     throw new Error('Failed to fetch customer for the deal');
                 }
-                const foundCustomer: Customer = await customerResponse.json();
                 setCustomer(foundCustomer);
 
             } catch (error) {

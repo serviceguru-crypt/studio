@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Customer } from "@/lib/data";
+import { Customer, getCustomers, addDeal } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, ChevronsUpDown, Check } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -47,23 +47,16 @@ export default function NewDealPage() {
   const [isLoadingCustomers, setIsLoadingCustomers] = React.useState(true);
   
   React.useEffect(() => {
-    async function fetchCustomers() {
+    try {
         setIsLoadingCustomers(true);
-        try {
-            const response = await fetch('/api/customers');
-            if (!response.ok) {
-                throw new Error('Failed to fetch customers');
-            }
-            const data = await response.json();
-            setCustomers(data);
-        } catch (error) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customers.' });
-        } finally {
-            setIsLoadingCustomers(false);
-        }
+        const data = getCustomers();
+        setCustomers(data);
+    } catch (error) {
+        console.error(error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customers.' });
+    } finally {
+        setIsLoadingCustomers(false);
     }
-    fetchCustomers();
   }, [toast]);
 
   const form = useForm<DealFormValues>({
@@ -77,23 +70,12 @@ export default function NewDealPage() {
 
   async function onSubmit(data: DealFormValues) {
     try {
-      const response = await fetch('/api/deals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create deal');
-      }
-
-      const newDeal = await response.json();
+      const newDeal = addDeal(data);
       toast({
         title: "Deal Created",
         description: "The new deal has been added successfully.",
       });
       router.push(`/deals/${newDeal.id}`);
-
     } catch (error) {
       console.error(error);
       toast({

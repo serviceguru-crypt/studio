@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Deal, Customer } from "@/lib/data";
+import { getDealById, updateDeal, getCustomers, Deal, Customer } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -47,19 +47,14 @@ export default function EditDealPage() {
     }
   });
 
-  const fetchDealAndCustomers = useCallback(async () => {
+  const fetchDealAndCustomers = useCallback(() => {
     if (id) {
         try {
-            // Fetch customers first
-            const custResponse = await fetch('/api/customers');
-            if (!custResponse.ok) throw new Error('Failed to fetch customers');
-            const custData: Customer[] = await custResponse.json();
-            setCustomers(custData);
-
-            // Then fetch the deal
-            const dealResponse = await fetch(`/api/deals/${id}`);
-            if (!dealResponse.ok) throw new Error('Failed to fetch deal');
-            const deal: Deal = await dealResponse.json();
+            setCustomers(getCustomers());
+            const deal = getDealById(id as string);
+            if (!deal) {
+              throw new Error('Deal not found');
+            }
 
             form.reset({
               ...deal,
@@ -81,13 +76,7 @@ export default function EditDealPage() {
   async function onSubmit(data: DealFormValues) {
     if (id) {
         try {
-            const response = await fetch(`/api/deals/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!response.ok) throw new Error('Failed to update deal');
-            
+            updateDeal(id as string, data);
             toast({
                 title: "Deal Updated",
                 description: "The deal has been updated successfully.",

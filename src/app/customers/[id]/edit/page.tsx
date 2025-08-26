@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Customer } from '@/lib/data';
+import { getCustomerById, updateCustomer, Customer } from '@/lib/data';
 
 const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -44,14 +44,13 @@ export default function EditCustomerPage() {
     }
   });
 
-  const fetchCustomer = useCallback(async () => {
+  const fetchCustomer = useCallback(() => {
     if (id) {
         try {
-            const response = await fetch(`/api/customers/${id}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch customer');
+            const customer = getCustomerById(id as string);
+            if (!customer) {
+              throw new Error('Customer not found');
             }
-            const customer: Customer = await response.json();
             form.reset({
               ...customer,
               phone: customer.phone || "", // Ensure phone is not undefined
@@ -74,16 +73,7 @@ export default function EditCustomerPage() {
 
   async function onSubmit(data: CustomerFormValues) {
     try {
-        const response = await fetch(`/api/customers/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to update customer');
-        }
-
+        updateCustomer(id as string, data);
         toast({
             title: "Customer Updated",
             description: "The customer has been updated successfully.",
