@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
@@ -55,22 +55,52 @@ export default function CustomerDetailsPage() {
         },
     });
 
-    const fetchCustomer = () => {
+    const fetchCustomer = useCallback(async () => {
         if (id) {
-            const foundCustomer = getCustomerById(id as string);
-            if (foundCustomer) {
-                // Ensure activity is always an array
-                foundCustomer.activity = foundCustomer.activity || [];
-                setCustomer(foundCustomer);
-            } else {
+            try {
+                const response = await fetch(`/api/customers/${id}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                         toast({
+                            variant: "destructive",
+                            title: "Customer not found",
+                            description: "The customer you are looking for does not exist.",
+                        });
+                    } else {
+                        throw new Error(`Failed to fetch customer. Status: ${response.status}`);
+                    }
+                    router.push('/customers');
+                    return;
+                }
+                const data: Customer = await response.json();
+                
+                // API response for activity dates might be strings
+                if (data.activity) {
+                    data.activity.forEach(act => {
+                        if (typeof act.date === 'string') {
+                            act.date = new Date(act.date);
+                        }
+                    });
+                } else {
+                    data.activity = [];
+                }
+                
+                setCustomer(data);
+            } catch (error) {
+                console.error("Failed to fetch customer:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: "Could not fetch customer details.",
+                });
                 router.push('/customers');
             }
         }
-    }
+    }, [id, router, toast]);
     
     useEffect(() => {
         fetchCustomer();
-    }, [id, router]);
+    }, [fetchCustomer]);
 
     const onSubmitActivity = (data: ActivityFormValues) => {
         if(id) {
