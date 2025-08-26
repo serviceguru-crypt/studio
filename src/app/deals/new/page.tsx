@@ -44,9 +44,11 @@ export default function NewDealPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [customers, setCustomers] = React.useState<Customer[]>([]);
+  const [isLoadingCustomers, setIsLoadingCustomers] = React.useState(true);
   
   React.useEffect(() => {
     async function fetchCustomers() {
+        setIsLoadingCustomers(true);
         try {
             const response = await fetch('/api/customers');
             if (!response.ok) {
@@ -57,6 +59,8 @@ export default function NewDealPage() {
         } catch (error) {
             console.error(error);
             toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customers.' });
+        } finally {
+            setIsLoadingCustomers(false);
         }
     }
     fetchCustomers();
@@ -100,6 +104,8 @@ export default function NewDealPage() {
     }
   }
 
+  const isSubmitting = form.formState.isSubmitting || isLoadingCustomers;
+
   return (
     <DashboardLayout>
       <div className="flex flex-col w-full">
@@ -120,7 +126,7 @@ export default function NewDealPage() {
                       <FormItem>
                         <FormLabel>Deal Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. ERP System for AgriMart" {...field} disabled={form.formState.isSubmitting} />
+                          <Input placeholder="e.g. ERP System for AgriMart" {...field} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -138,6 +144,7 @@ export default function NewDealPage() {
                                 <Button
                                     variant="outline"
                                     role="combobox"
+                                    disabled={isLoadingCustomers}
                                     className={cn(
                                     "w-full justify-between",
                                     !field.value && "text-muted-foreground"
@@ -147,7 +154,7 @@ export default function NewDealPage() {
                                     ? customers.find(
                                         (customer) => customer.id === field.value
                                     )?.name
-                                    : "Select customer"}
+                                    : (isLoadingCustomers ? "Loading customers..." : "Select customer")}
                                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </Button>
                                 </FormControl>
@@ -193,7 +200,7 @@ export default function NewDealPage() {
                       <FormItem>
                         <FormLabel>Value (₦)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 7500000" {...field} disabled={form.formState.isSubmitting} />
+                          <Input type="number" placeholder="e.g. 7500000" {...field} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -205,7 +212,7 @@ export default function NewDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Stage</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={form.formState.isSubmitting}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a deal stage" />
@@ -238,7 +245,7 @@ export default function NewDealPage() {
                                   "w-full pl-3 text-left font-normal",
                                   !field.value && "text-muted-foreground"
                                 )}
-                                disabled={form.formState.isSubmitting}
+                                disabled={isSubmitting}
                               >
                                 {field.value ? (
                                   format(field.value, "PPP")
@@ -270,8 +277,8 @@ export default function NewDealPage() {
                   <Button variant="outline" asChild>
                     <Link href="/deals">Cancel</Link>
                   </Button>
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Adding...' : 'Add Deal'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Adding...' : 'Add Deal'}
                   </Button>
                 </CardFooter>
               </Card>
