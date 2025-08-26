@@ -12,7 +12,8 @@ interface PieChartCardProps {
 export function PieChartCard({ data }: PieChartCardProps) {
     const chartData = Array.isArray(data) ? data : [];
     const chartConfig = chartData.reduce((acc, item) => {
-        acc[item.name.toLowerCase().replace(/ /g, '')] = { label: item.name, color: item.fill };
+        const key = item.name.toLowerCase().replace(/ /g, '');
+        acc[key] = { label: item.name, color: item.fill };
         return acc;
     }, {} as any) satisfies ChartConfig;
 
@@ -26,12 +27,15 @@ export function PieChartCard({ data }: PieChartCardProps) {
                 <ChartContainer config={chartConfig} className="mx-auto w-full aspect-square max-h-[300px]">
                     <PieChart>
                         <Tooltip content={<ChartTooltipContent nameKey="name" />} />
+                        <Legend />
                         <Pie data={chartData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
                             {chartData.map((entry) => (
-                                <Cell key={`cell-${entry.name}`} fill={`var(--color-${entry.name.toLowerCase().replace(/ /g, '')})`} />
+                                <Cell 
+                                    key={`cell-${entry.name}`} 
+                                    fill={chartConfig[entry.name.toLowerCase().replace(/ /g, '')]?.color} 
+                                />
                             ))}
                         </Pie>
-                        <Legend />
                     </PieChart>
                 </ChartContainer>
             </CardContent>
