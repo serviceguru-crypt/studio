@@ -1,4 +1,5 @@
 
+
 import { addDays } from 'date-fns';
 
 export type Role = 'Admin' | 'Sales Rep';
@@ -76,47 +77,10 @@ export const initialCompanyProfiles: CompanyProfile[] = [
 ];
 
 
-export const initialCustomersData: Customer[] = [
-    { id: 'C001', name: 'Adekunle Ciroma', email: 'kunle@techco.ng', phone: '+2348012345678', organization: 'TechCo Nigeria', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
-    { id: 'C002', name: 'Ngozi Okoro', email: 'ngozi@finserve.com', phone: '+2348023456789', organization: 'FinServe Solutions', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
-    { id: 'C003', name: 'Chinedu Eze', email: 'chinedu@agrimart.ng', phone: '+2348034567890', organization: 'AgriMart', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
-    { id: 'C004', name: 'Fatima Bello', email: 'fatima@healthwise.com.ng', phone: '+2348045678901', organization: 'HealthWise Ltd', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
-    { id: 'C005', name: 'Yusuf Alabi', email: 'yusuf@logistics.ng', phone: '+2348056789012', organization: 'Speedy Logistics', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
-    { id: 'C006', name: 'Aisha Lawal', email: 'aisha@edutech.ng', phone: '+2348067890123', organization: 'EduTech Innovations', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
-    { id: 'C007', name: 'Emeka Nwosu', email: 'emeka@powergen.com', phone: '+2348078901234', organization: 'PowerGen NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
-    { id: 'C008', name: 'Hadiza Musa', email: 'hadiza@buildit.ng', phone: '+2348089012345', organization: 'BuildIt Construction', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
-    { id: 'C009', name: 'Tunde Adebayo', email: 'tunde@retailhub.ng', phone: '+2348090123456', organization: 'RetailHub', status: 'Inactive', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U001', organizationId: 'O001' },
-    { id: 'C010', name: 'Sekinat Balogun', email: 'sekinat@fashionista.com', phone: '+2348101234567', organization: 'Fashionista NG', status: 'Active', avatar: 'https://placehold.co/40x40.png', activity: [], ownerId: 'U002', organizationId: 'O001' },
-];
-
-let dealsData: Deal[] = [
-    { id: 'D001', name: 'ERP System for AgriMart', stage: 'Proposal', value: 7500000, customerId: 'C003', ownerId: 'U001', closeDate: addDays(today, 10), organizationId: 'O001' },
-    { id: 'D002', name: 'Mobile App for FinServe', stage: 'Negotiation', value: 12000000, customerId: 'C002', ownerId: 'U002', closeDate: addDays(today, 25), organizationId: 'O001' },
-    { id: 'D003', name: 'Cloud Migration for TechCo', stage: 'Closed Won', value: 25000000, customerId: 'C001', ownerId: 'U001', closeDate: addDays(today, -5), organizationId: 'O001' },
-    { id: 'D004', name: 'Logistics Platform Upgrade', stage: 'Qualification', value: 5000000, customerId: 'C005', ownerId: 'U001', closeDate: addDays(today, 45), organizationId: 'O001' },
-    { id: 'D005', name: 'Telemedicine Portal', stage: 'Proposal', value: 9500000, customerId: 'C004', ownerId: 'U002', closeDate: addDays(today, 15), organizationId: 'O001' },
-    { id: 'D006', name: 'E-learning Platform', stage: 'Closed Lost', value: 6000000, customerId: 'C006', ownerId: 'U002', closeDate: addDays(today, -2), organizationId: 'O001' },
-    { id: 'D007', name: 'Solar Power Installation', stage: 'Negotiation', value: 18000000, customerId: 'C007', ownerId: 'U001', closeDate: addDays(today, 30), organizationId: 'O001' },
-    { id: 'D008', name: 'New Retail Branch Fit-out', stage: 'Closed Won', value: 3000000, customerId: 'C009', ownerId: 'U001', closeDate: addDays(today, -1), organizationId: 'O001' },
-    { id: 'D009', name: 'Website Redesign', stage: 'Qualification', value: 2000000, customerId: 'C010', ownerId: 'U002', closeDate: addDays(today, 60), organizationId: 'O001' },
-    { id: 'D010', name: 'Construction Material Supply', stage: 'Proposal', value: 4500000, customerId: 'C008', ownerId: 'U002', closeDate: addDays(today, 20), organizationId: 'O001' },
-];
-
-export const leadsSourceData = [
-  { name: 'Referral', count: 150, fill: 'hsl(var(--chart-1))' },
-  { name: 'Website', count: 120, fill: 'hsl(var(--chart-2))' },
-  { name: 'Social Media', count: 80, fill: 'hsl(var(--chart-3))' },
-  { name: 'Cold Call', count: 50, fill: 'hsl(var(--chart-4))' },
-  { name: 'Events', count: 30, fill: 'hsl(var(--chart-5))' },
-];
-
-export const recentSales = [
-  { name: 'Olivia Martin', email: 'olivia.martin@email.com', amount: 1999.00, avatar: 'https://placehold.co/40x40.png' },
-  { name: 'Jackson Lee', email: 'jackson.lee@email.com', amount: 39.00, avatar: 'https://placehold.co/40x40.png' },
-  { name: 'Isabella Nguyen', email: 'isabella.nguyen@email.com', amount: 299.00, avatar: 'https://placehold.co/40x40.png' },
-  { name: 'William Kim', email: 'will@email.com', amount: 99.00, avatar: 'https://placehold.co/40x40.png' },
-  { name: 'Sofia Davis', email: 'sofia.davis@email.com', amount: 39.00, avatar: 'https://placehold.co/40x40.png' },
-];
+export const initialCustomersData: Customer[] = [];
+let dealsData: Deal[] = [];
+export const leadsSourceData = [];
+export const recentSales = [];
 
 export const teamPerformance = [
     { name: 'Alice', deals: 12, value: 150000 },
@@ -140,7 +104,7 @@ const initializeData = <T>(key: string, initialData: T[]): T[] => {
                 }
                 return value;
             });
-            if (Array.isArray(parsedData) && parsedData.length > 0) {
+            if (Array.isArray(parsedData)) {
                 return parsedData;
             }
         }
@@ -242,8 +206,7 @@ export const getCustomers = (): Customer[] => {
 };
 
 export const addCustomer = (customerData: { name: string; email: string; organization: string; phone?: string; ownerId: string; organizationId: string; }) => {
-    customersData = initializeData('customers', initialCustomersData);
-
+    customersData = initializeData('customers', []);
     const newCustomer: Customer = {
         id: `C${Date.now()}`,
         name: customerData.name,
@@ -262,11 +225,11 @@ export const addCustomer = (customerData: { name: string; email: string; organiz
 };
 
 export const getCustomerById = (id: string): Customer | undefined => {
-    return initializeData('customers', initialCustomersData).find(customer => customer.id === id);
+    return initializeData('customers', []).find(customer => customer.id === id);
 }
 
 export const updateCustomer = (id: string, updatedData: Partial<Omit<Customer, 'id' | 'avatar'>>) => {
-    const customers = initializeData('customers', initialCustomersData);
+    const customers = initializeData('customers', []);
     const customerIndex = customers.findIndex(customer => customer.id === id);
     if (customerIndex > -1) {
         customers[customerIndex] = { ...customers[customerIndex], ...updatedData };
@@ -277,14 +240,14 @@ export const updateCustomer = (id: string, updatedData: Partial<Omit<Customer, '
 };
 
 export const deleteCustomer = (id: string) => {
-    let customers = initializeData('customers', initialCustomersData);
+    let customers = initializeData('customers', []);
     customers = customers.filter(customer => customer.id !== id);
     localStorage.setItem('customers', JSON.stringify(customers));
 };
 
 // Deal Functions
 export const getDeals = (): Deal[] => {
-    dealsDataStore = initializeData('deals', dealsData);
+    dealsDataStore = initializeData('deals', []);
     const currentUser = getCurrentUser();
     if (!currentUser) return [];
     
@@ -297,7 +260,7 @@ export const getDeals = (): Deal[] => {
 };
 
 export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) => {
-    dealsDataStore = initializeData('deals', dealsData);
+    dealsDataStore = initializeData('deals', []);
     const currentUser = getCurrentUser();
      if (!currentUser) throw new Error("No logged in user");
     const newDeal: Deal = {
@@ -312,11 +275,11 @@ export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) =
 };
 
 export const getDealById = (id: string): Deal | undefined => {
-    return initializeData('deals', dealsData).find(deal => deal.id === id);
+    return initializeData('deals', []).find(deal => deal.id === id);
 }
 
 export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) => {
-    const deals = initializeData('deals', dealsData);
+    const deals = initializeData('deals', []);
     const dealIndex = deals.findIndex(deal => deal.id === id);
     if (dealIndex > -1) {
         deals[dealIndex] = { ...deals[dealIndex], ...updatedData };
@@ -327,14 +290,14 @@ export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) =
 };
 
 export const deleteDeal = (id: string) => {
-    let deals = initializeData('deals', dealsData);
+    let deals = initializeData('deals', []);
     deals = deals.filter(deal => deal.id !== id);
     localStorage.setItem('deals', JSON.stringify(deals));
 };
 
 // Activity Functions
 export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 'date'>) => {
-    const customers = initializeData('customers', initialCustomersData);
+    const customers = initializeData('customers', []);
     const customerIndex = customers.findIndex(c => c.id === customerId);
     if (customerIndex > -1) {
         const newActivity: Activity = {
