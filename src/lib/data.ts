@@ -1,4 +1,5 @@
 
+
 import { addDays } from 'date-fns';
 
 export type Role = 'Admin' | 'Sales Rep';
@@ -233,7 +234,7 @@ export const addCustomer = (customer: { name: string; email: string; organizatio
         name: customer.name,
         email: customer.email,
         organization: customer.organization,
-        phone: customer.phone || undefined, // Ensure phone is undefined if not provided or empty
+        phone: customer.phone || undefined,
         id: `C${Date.now()}`,
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customer.name.charAt(0)}`,
@@ -344,5 +345,3 @@ export const leadsData = [
   { name: 'Cold Call', count: 50, fill: 'hsl(43 74% 66%)' },
   { name: 'Events', count: 30, fill: 'hsl(27 87% 67%)' },
 ];
-
-    
