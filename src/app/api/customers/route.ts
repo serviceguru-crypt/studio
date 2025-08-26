@@ -8,6 +8,8 @@ const customerFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
   phone: z.string().optional(),
   organization: z.string().min(2, { message: "Organization name must be at least 2 characters." }),
+  ownerId: z.string(),
+  organizationId: z.string(),
 });
 
 
@@ -22,14 +24,13 @@ export async function POST(request: Request) {
         const json = await request.json();
         const body = customerFormSchema.parse(json);
 
-        // NOTE: The 'ownerId' and 'organizationId' would normally come from the
-        // authenticated session on the server, not from what the client sends.
-        // We are using the mock data function which handles this for now.
         const newCustomer = addCustomerData({
             name: body.name,
             email: body.email,
             phone: body.phone,
             organization: body.organization,
+            ownerId: body.ownerId,
+            organizationId: body.organizationId
         });
 
         return NextResponse.json(newCustomer, { status: 201 });

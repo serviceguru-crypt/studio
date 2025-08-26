@@ -241,10 +241,8 @@ export const getCustomers = (): Customer[] => {
     return orgCustomers.filter(c => c.ownerId === currentUser.id);
 };
 
-export const addCustomer = (customerData: { name: string; email: string; organization: string; phone?: string; }) => {
+export const addCustomer = (customerData: { name: string; email: string; organization: string; phone?: string; ownerId: string; organizationId: string; }) => {
     customersData = initializeData('customers', initialCustomersData);
-    const currentUser = getCurrentUser();
-    if (!currentUser) throw new Error("No logged in user");
 
     const newCustomer: Customer = {
         id: `C${Date.now()}`,
@@ -255,8 +253,8 @@ export const addCustomer = (customerData: { name: string; email: string; organiz
         status: 'Active',
         avatar: `https://placehold.co/40x40.png?text=${customerData.name.charAt(0)}`,
         activity: [],
-        ownerId: currentUser.id,
-        organizationId: currentUser.organizationId,
+        ownerId: customerData.ownerId,
+        organizationId: customerData.organizationId,
     };
     customersData.push(newCustomer);
     localStorage.setItem('customers', JSON.stringify(customersData));
