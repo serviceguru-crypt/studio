@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         await registerUser(signupData);
 
         // Redirect to login page after successful registration
-        return NextResponse.redirect(new URL('/login', request.url));
+        return NextResponse.redirect(new URL('/login?payment=success', request.url));
 
       } else {
         // Verification failed
