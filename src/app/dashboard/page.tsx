@@ -45,9 +45,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
+    // Auto-refresh data every 60 seconds
+    const intervalId = setInterval(fetchData, 60000); 
+
     // This is a simple way to refetch on window focus, you might want a more robust solution
     window.addEventListener('focus', fetchData);
+    
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener('focus', fetchData);
     };
   }, [fetchData]);
