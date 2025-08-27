@@ -333,6 +333,9 @@ export async function inviteUser(data: { name: string, email: string, role: Role
     } catch (error: any) {
         console.error("Error inviting user:", error);
         // Re-throw specific or generic errors to be handled by the UI
+        if (error.code === 'auth/email-already-in-use') {
+            throw new Error("This email address is already in use by another account.");
+        }
         throw error;
     } finally {
         // IMPORTANT: Clean up the temporary app instance
@@ -676,3 +679,4 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
+

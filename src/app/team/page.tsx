@@ -323,7 +323,7 @@ export default function TeamPage() {
                                         <TableRow key={member.id}>
                                             <TableCell className="hidden sm:table-cell">
                                                 <Avatar className="h-10 w-10">
-                                                    <AvatarImage src={member.avatar} alt={member.name} data-ai-hint="person avatar" />
+                                                    <AvatarImage src={member.avatar} alt={member.name} />
                                                     <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                                 </Avatar>
                                             </TableCell>
