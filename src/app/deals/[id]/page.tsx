@@ -7,12 +7,13 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Deal, Customer, getDealById, getCustomerById, Activity } from '@/lib/data';
+import { Deal, Customer, getDealById, getCustomerById, Activity, auth } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, MessageCircle, PhoneCall, Users, StickyNote, Workflow } from 'lucide-react';
 import Link from 'next/link';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const getBadgeVariant = (stage: string) => {
     switch (stage.toLowerCase()) {
@@ -45,9 +46,21 @@ export default function DealDetailsPage() {
     const { toast } = useToast();
     const [deal, setDeal] = useState<Deal | null>(null);
     const [customer, setCustomer] = useState<Customer | null>(null);
+    const [isAuthReady, setIsAuthReady] = useState(false);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
+                setIsAuthReady(true);
+            } else {
+                router.push('/login');
+            }
+        });
+        return () => unsubscribe();
+    }, [router]);
 
     const fetchDealDetails = useCallback(async () => {
-        if (id) {
+        if (id && isAuthReady) {
             try {
                 const foundDeal = await getDealById(id as string);
                 if (!foundDeal) {
@@ -80,7 +93,7 @@ export default function DealDetailsPage() {
                 router.push('/deals');
             }
         }
-    }, [id, router, toast]);
+    }, [id, router, toast, isAuthReady]);
     
     useEffect(() => {
         fetchDealDetails();
@@ -204,3 +217,5 @@ export default function DealDetailsPage() {
         </DashboardLayout>
     );
 }
+
+    

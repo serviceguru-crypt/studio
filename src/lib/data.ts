@@ -93,7 +93,7 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const auth = getAuth(app);
+export const auth = getAuth(app);
 
 
 // --- UTILITY FUNCTIONS ---
@@ -535,3 +535,5 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
+
+    
