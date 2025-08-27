@@ -7,9 +7,9 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getCustomerById, Customer, addActivity } from '@/lib/data';
+import { getCustomerById, Customer, addActivity, getCurrentUser, User } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit, Mail, Phone, Building, MessageSquarePlus, MessageCircle, PhoneCall, Users, StickyNote } from 'lucide-react';
+import { ArrowLeft, Edit, Mail, Phone, Building, MessageSquarePlus, MessageCircle, PhoneCall, Users, StickyNote, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { EmailComposer } from '@/components/email-composer';
@@ -46,6 +46,7 @@ export default function CustomerDetailsPage() {
     const { toast } = useToast();
     const [customer, setCustomer] = useState<Customer | null>(null);
     const [isComposerOpen, setIsComposerOpen] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
 
     const form = useForm<ActivityFormValues>({
         resolver: zodResolver(activityFormSchema),
@@ -54,6 +55,11 @@ export default function CustomerDetailsPage() {
             notes: '',
         },
     });
+    
+    useEffect(() => {
+        const user = getCurrentUser();
+        setCurrentUser(user);
+    }, []);
 
     const fetchCustomer = useCallback(async () => {
         if (id) {
@@ -72,10 +78,13 @@ export default function CustomerDetailsPage() {
                 // Ensure all activity dates are proper Date objects
                 if (data.activity) {
                     data.activity.forEach(act => {
+                        // Firestore Timestamp objects have a toDate() method
                         if (act.date && typeof act.date.toDate === 'function') {
                             act.date = act.date.toDate();
                         } else if (typeof act.date === 'string') {
                             act.date = new Date(act.date);
+                        } else if (!(act.date instanceof Date)) {
+                             act.date = new Date(); // Fallback for invalid date
                         }
                     });
                 } else {
@@ -111,8 +120,9 @@ export default function CustomerDetailsPage() {
         }
     }
 
+    const isProFeatureEnabled = currentUser?.tier === 'Pro' || currentUser?.tier === 'Enterprise';
 
-    if (!customer) {
+    if (!customer || !currentUser) {
         return (
             <DashboardLayout>
                 <div className="flex flex-col w-full">
@@ -144,10 +154,18 @@ export default function CustomerDetailsPage() {
                              <p className="text-sm text-muted-foreground">{customer.organization}</p>
                         </div>
                         <div className="hidden items-center gap-2 md:ml-auto md:flex">
-                             <Button variant="outline" size="sm" onClick={() => setIsComposerOpen(true)}>
-                                <MessageSquarePlus className="h-4 w-4 mr-2" />
-                                Compose AI Email
-                            </Button>
+                             {isProFeatureEnabled ? (
+                                <Button variant="outline" size="sm" onClick={() => setIsComposerOpen(true)}>
+                                    <MessageSquarePlus className="h-4 w-4 mr-2" />
+                                    Compose AI Email
+                                </Button>
+                             ) : (
+                                <Button variant="default" size="sm" asChild>
+                                    <Link href="/pricing">
+                                        <Zap className="h-4 w-4 mr-2" /> Upgrade to Pro
+                                    </Link>
+                                </Button>
+                             )}
                              <Button asChild size="sm">
                                 <Link href={`/customers/${customer.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-2" />
