@@ -299,153 +299,150 @@ export default function DealsPage() {
                     </Button>
                 </div>
             </div>
-          
-            <div className="grid gap-4 md:grid-cols-4">
-                 <div className="md:col-span-3">
-                    <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
-                        <div className="flex items-center">
-                        <TabsList>
-                            <TabsTrigger value="all">All</TabsTrigger>
-                            <TabsTrigger value="qualification">Qualification</TabsTrigger>
-                            <TabsTrigger value="proposal">Proposal</TabsTrigger>
-                            <TabsTrigger value="negotiation">Negotiation</TabsTrigger>
-                            <TabsTrigger value="closedwon">Closed Won</TabsTrigger>
-                            <TabsTrigger value="closedlost">Closed Lost</TabsTrigger>
-                        </TabsList>
-                        </div>
-                        <TabsContent value={activeTab}>
-                            <Card>
-                                <CardHeader>
-                                    <div className="relative mt-4">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input 
-                                            placeholder="Search deals by name or organization..." 
-                                            className="pl-8 w-full"
-                                            value={searchTerm}
-                                            onChange={handleSearch}
-                                        />
-                                    </div>
-                                </CardHeader>
-                                <CardContent>
-                                {isLoading ? (
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Deal Name</TableHead>
-                                                <TableHead>Stage</TableHead>
-                                                <TableHead className="hidden sm:table-cell">Lead Score</TableHead>
-                                                <TableHead className="hidden md:table-cell">Organization</TableHead>
-                                                <TableHead className="text-right">Value</TableHead>
-                                                <TableHead><span className="sr-only">Actions</span></TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {[...Array(5)].map((_, i) => (
-                                                <TableRow key={i}>
-                                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                                    <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
-                                                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
-                                                    <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
-                                                    <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                                    <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                ) : (
-                                <Table>
-                                    <TableHeader>
+            
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-4">
+                <StageSummaryCard title="Qualification" count={stageSummary.qualification.count} value={stageSummary.qualification.value} icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} />
+                <StageSummaryCard title="Proposal" count={stageSummary.proposal.count} value={stageSummary.proposal.value} icon={<FileText className="h-4 w-4 text-muted-foreground" />} />
+                <StageSummaryCard title="Negotiation" count={stageSummary.negotiation.count} value={stageSummary.negotiation.value} icon={<BarChart className="h-4 w-4 text-muted-foreground" />} />
+                <StageSummaryCard title="Closed Won" count={stageSummary.closedWon.count} value={stageSummary.closedWon.value} icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />} />
+                <StageSummaryCard title="Closed Lost" count={stageSummary.closedLost.count} value={stageSummary.closedLost.value} icon={<XCircle className="h-4 w-4 text-muted-foreground" />} />
+            </div>
+
+            <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
+                <div className="flex items-center">
+                    <TabsList>
+                        <TabsTrigger value="all">All</TabsTrigger>
+                        <TabsTrigger value="qualification">Qualification</TabsTrigger>
+                        <TabsTrigger value="proposal">Proposal</TabsTrigger>
+                        <TabsTrigger value="negotiation">Negotiation</TabsTrigger>
+                        <TabsTrigger value="closedwon">Closed Won</TabsTrigger>
+                        <TabsTrigger value="closedlost">Closed Lost</TabsTrigger>
+                    </TabsList>
+                </div>
+                <TabsContent value={activeTab}>
+                    <Card>
+                        <CardHeader>
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search deals by name or organization..." 
+                                    className="pl-8 w-full md:w-1/3"
+                                    value={searchTerm}
+                                    onChange={handleSearch}
+                                />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                        {isLoading ? (
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
                                         <TableHead>Deal Name</TableHead>
                                         <TableHead>Stage</TableHead>
                                         <TableHead className="hidden sm:table-cell">Lead Score</TableHead>
                                         <TableHead className="hidden md:table-cell">Organization</TableHead>
                                         <TableHead className="text-right">Value</TableHead>
-                                        <TableHead>
-                                            <span className="sr-only">Actions</span>
-                                        </TableHead>
+                                        <TableHead><span className="sr-only">Actions</span></TableHead>
                                     </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                    {filteredDeals.map(deal => (
-                                        <TableRow key={deal.id}>
-                                            <TableCell className="font-medium">{deal.name}</TableCell>
-                                            <TableCell>
-                                                <Badge variant={getBadgeVariant(deal.stage)}>{deal.stage}</Badge>
-                                            </TableCell>
-                                            <TableCell className="hidden sm:table-cell">
-                                                {deal.isScoring ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <Skeleton className="h-5 w-12" />
-                                                    </div>
-                                                ) : deal.leadScore ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <Badge variant={getScoreBadgeVariant(deal.leadScore)}>{deal.leadScore}</Badge>
-                                                        <Tooltip>
-                                                            <TooltipTrigger asChild>
-                                                            <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p className="max-w-xs">{deal.justification}</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    </div>
-                                                ) : (
-                                                <Badge variant="outline">Not Scored</Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="hidden md:table-cell">{deal.organization}</TableCell>
-                                            <TableCell className="text-right">
-                                                ₦{deal.value.toLocaleString()}
-                                            </TableCell>
-                                            <TableCell>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                    <span className="sr-only">Toggle menu</span>
-                                                </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/deals/${deal.id}/edit`}>Update Deal</Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/deals/${deal.id}`}>View Details</Link>
-                                                </DropdownMenuItem>
-                                                {currentUser?.role === 'Admin' && (
-                                                    <>
-                                                        <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="text-destructive" onClick={() => setDealToDelete(deal.id)}>Delete</DropdownMenuItem>
-                                                    </>
-                                                )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            </TableCell>
+                                </TableHeader>
+                                <TableBody>
+                                    {[...Array(5)].map((_, i) => (
+                                        <TableRow key={i}>
+                                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                                            <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                                            <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-40" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                                            <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                                         </TableRow>
                                     ))}
-                                    </TableBody>
-                                </Table>
-                                )}
-                                {filteredDeals.length === 0 && !isLoading && (
-                                    <div className="text-center py-10">
-                                        <p className="text-muted-foreground">No deals found matching your criteria.</p>
-                                    </div>
-                                )}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
-                 </div>
-                 <div className="md:col-span-1 space-y-4">
-                     <StageSummaryCard title="Qualification" count={stageSummary.qualification.count} value={stageSummary.qualification.value} icon={<Briefcase className="h-4 w-4 text-muted-foreground" />} />
-                     <StageSummaryCard title="Proposal" count={stageSummary.proposal.count} value={stageSummary.proposal.value} icon={<FileText className="h-4 w-4 text-muted-foreground" />} />
-                     <StageSummaryCard title="Negotiation" count={stageSummary.negotiation.count} value={stageSummary.negotiation.value} icon={<BarChart className="h-4 w-4 text-muted-foreground" />} />
-                     <StageSummaryCard title="Closed Won" count={stageSummary.closedWon.count} value={stageSummary.closedWon.value} icon={<CheckCircle className="h-4 w-4 text-muted-foreground" />} />
-                     <StageSummaryCard title="Closed Lost" count={stageSummary.closedLost.count} value={stageSummary.closedLost.value} icon={<XCircle className="h-4 w-4 text-muted-foreground" />} />
-                 </div>
-            </div>
+                                </TableBody>
+                            </Table>
+                        ) : (
+                        <Table>
+                            <TableHeader>
+                            <TableRow>
+                                <TableHead>Deal Name</TableHead>
+                                <TableHead>Stage</TableHead>
+                                <TableHead className="hidden sm:table-cell">Lead Score</TableHead>
+                                <TableHead className="hidden md:table-cell">Organization</TableHead>
+                                <TableHead className="text-right">Value</TableHead>
+                                <TableHead>
+                                    <span className="sr-only">Actions</span>
+                                </TableHead>
+                            </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                            {filteredDeals.map(deal => (
+                                <TableRow key={deal.id}>
+                                    <TableCell className="font-medium">{deal.name}</TableCell>
+                                    <TableCell>
+                                        <Badge variant={getBadgeVariant(deal.stage)}>{deal.stage}</Badge>
+                                    </TableCell>
+                                    <TableCell className="hidden sm:table-cell">
+                                        {deal.isScoring ? (
+                                            <div className="flex items-center gap-2">
+                                                <Skeleton className="h-5 w-12" />
+                                            </div>
+                                        ) : deal.leadScore ? (
+                                            <div className="flex items-center gap-1">
+                                                <Badge variant={getScoreBadgeVariant(deal.leadScore)}>{deal.leadScore}</Badge>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                    <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p className="max-w-xs">{deal.justification}</p>
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        ) : (
+                                        <Badge variant="outline">Not Scored</Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="hidden md:table-cell">{deal.organization}</TableCell>
+                                    <TableCell className="text-right">
+                                        ₦{deal.value.toLocaleString()}
+                                    </TableCell>
+                                    <TableCell>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                            <span className="sr-only">Toggle menu</span>
+                                        </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/deals/${deal.id}/edit`}>Update Deal</Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/deals/${deal.id}`}>View Details</Link>
+                                        </DropdownMenuItem>
+                                        {currentUser?.role === 'Admin' && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem className="text-destructive" onClick={() => setDealToDelete(deal.id)}>Delete</DropdownMenuItem>
+                                            </>
+                                        )}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            </TableBody>
+                        </Table>
+                        )}
+                        {filteredDeals.length === 0 && !isLoading && (
+                            <div className="text-center py-10">
+                                <p className="text-muted-foreground">No deals found matching your criteria.</p>
+                            </div>
+                        )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
           </TooltipProvider>
 
           <AlertDialog open={!!dealToDelete} onOpenChange={(open) => !open && setDealToDelete(null)}>
