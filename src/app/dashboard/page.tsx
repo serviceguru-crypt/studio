@@ -8,7 +8,7 @@ import { MetricCard } from '@/components/metric-card';
 import { LineChartCard } from '@/components/charts/line-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
 import { AiSummary } from '@/components/ai-summary';
-import { getDeals, getCustomers, leadsSourceData, Deal, Customer } from '@/lib/data';
+import { getDeals, getCustomers, getLeads, Deal, Customer, Lead } from '@/lib/data';
 import { RecentSales } from '@/components/recent-sales';
 import { Users, DollarSign, Briefcase, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,11 +16,22 @@ import { addDays, isWithinInterval, format, startOfMonth } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import { useRouter } from 'next/navigation';
 
+const leadSourceColors: Record<string, string> = {
+  'Website': 'hsl(var(--chart-1))',
+  'Referral': 'hsl(var(--chart-2))',
+  'Social Media': 'hsl(var(--chart-3))',
+  'Cold Call': 'hsl(var(--chart-4))',
+  'Event': 'hsl(var(--chart-5))',
+  'Other': 'hsl(var(--muted))',
+};
+
+
 export default function DashboardPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [allDeals, setAllDeals] = useState<Deal[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [date, setDate] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
@@ -39,8 +50,10 @@ export default function DashboardPage() {
     try {
       const deals = await getDeals();
       const custs = await getCustomers();
+      const leadData = await getLeads();
       setAllDeals(deals.map(d => ({ ...d, closeDate: new Date(d.closeDate) })));
       setCustomers(custs);
+      setLeads(leadData);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
     } finally {
@@ -82,7 +95,7 @@ export default function DashboardPage() {
     if (isLoading || customers.length === 0) return null;
 
     const customersById = new Map(customers.map(c => [c.id, c]));
-    const totalLeads = Array.isArray(leadsSourceData) ? leadsSourceData.reduce((acc: number, item: { count: number; }) => acc + item.count, 0) : 0;
+    const totalLeads = leads.length;
     const activeDealsCount = allDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
     
     const wonDealsInPeriod = filteredDeals.filter(d => d.stage === 'Closed Won');
@@ -101,17 +114,30 @@ export default function DashboardPage() {
           avatar: customer?.avatar || `https://placehold.co/40x40.png`,
         }
       });
+      
+    const leadsBySourceData = leads.reduce((acc, lead) => {
+        if (lead.source) {
+            acc[lead.source] = (acc[lead.source] || 0) + 1;
+        }
+        return acc;
+    }, {} as Record<string, number>);
+
+    const leadsBySourceChartData = Object.entries(leadsBySourceData).map(([source, count]) => ({
+        name: source,
+        count: count,
+        fill: leadSourceColors[source] || leadSourceColors['Other'],
+    }));
 
     return {
       totalRevenue,
       totalSales,
       totalLeads,
       activeDealsCount,
-      leadsBySource: leadsSourceData,
+      leadsBySource: leadsBySourceChartData,
       dealsData: filteredDeals, // This is correct for AI summary in the selected period
       recentSales: recentSalesData,
     };
-  }, [isLoading, allDeals, filteredDeals, customers]);
+  }, [isLoading, allDeals, filteredDeals, customers, leads]);
   
   if (isLoading || !metrics) {
     return (
