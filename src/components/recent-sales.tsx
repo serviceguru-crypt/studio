@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 type RecentSalesProps = {
     data: {
+        id: string;
         name: string;
         email: string;
         amount: number;
@@ -19,8 +20,8 @@ export function RecentSales({ data, totalSales }: RecentSalesProps) {
                 <CardDescription>You made {totalSales} sales in this period.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {data.map((sale, index) => (
-                    <div key={index} className="flex items-center gap-4">
+                {data.map((sale) => (
+                    <div key={sale.id} className="flex items-center gap-4">
                         <Avatar className="h-9 w-9">
                             <AvatarImage src={sale.avatar} alt="Avatar" data-ai-hint="person avatar" />
                             <AvatarFallback>{sale.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>

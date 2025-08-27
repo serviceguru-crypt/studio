@@ -92,7 +92,7 @@ export default function DashboardPage() {
   }, [filteredDeals]);
 
   const metrics = useMemo(() => {
-    if (isLoading || customers.length === 0) return null;
+    if (isLoading) return null;
 
     const customersById = new Map(customers.map(c => [c.id, c]));
     const totalLeads = leads.length;
@@ -108,10 +108,11 @@ export default function DashboardPage() {
       .map(deal => {
         const customer = customersById.get(deal.customerId);
         return {
+          id: deal.id,
           name: customer?.name || 'Unknown Customer',
           email: customer?.email || '',
           amount: deal.value,
-          avatar: customer?.avatar || `https://placehold.co/40x40.png`,
+          avatar: customer?.avatar || `https://avatar.vercel.sh/${customer?.email}.png`,
         }
       });
       
