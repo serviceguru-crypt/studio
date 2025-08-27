@@ -45,7 +45,7 @@ export async function createPaymentLink(
       }
     };
 
-    const response = await flw.PaymentLink.create(payload);
+    const response = await flw.paymentLink.create(payload);
 
     if (response.status === 'success') {
       return response.data.link;
