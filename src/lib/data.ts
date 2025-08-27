@@ -278,6 +278,14 @@ export function getCurrentUser(): User | null {
     return userJson ? JSON.parse(userJson) : null;
 }
 
+export async function getUsersForOrganization(): Promise<User[]> {
+    const { organizationId } = await getCurrentUserAuth();
+    const usersCol = collection(db, `organizations/${organizationId}/users`);
+    const snapshot = await getDocs(usersCol);
+    return snapshot.docs.map(d => d.data() as User);
+}
+
+
 export async function sendPasswordReset(email: string): Promise<void> {
     await sendPasswordResetEmail(auth, email);
 }
