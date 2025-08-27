@@ -41,7 +41,7 @@ const getBadgeVariant = (stage: string) => {
 }
 export default function AnalyticsPage() {
     const [allDeals, setAllDeals] = React.useState<Deal[]>([]);
-    const [leads, setLeads] = React.useState<Lead[]>([]);
+    const [allLeads, setAllLeads] = React.useState<Lead[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [filteredDeals, setFilteredDeals] = React.useState<Deal[]>([]);
     const [salesChartData, setSalesChartData] = React.useState<{ name: string; sales: number }[]>([]);
@@ -50,16 +50,20 @@ export default function AnalyticsPage() {
       to: new Date(),
     });
 
-    React.useEffect(() => {
-        async function loadData() {
-            setIsLoading(true);
-            const [deals, leadData] = await Promise.all([getDeals(), getLeads()]);
-            setAllDeals(deals.map(d => ({...d, closeDate: new Date(d.closeDate)})));
-            setLeads(leadData);
-            setIsLoading(false);
-        }
-        loadData();
+    const loadData = React.useCallback(async () => {
+        setIsLoading(true);
+        const [deals, leadData] = await Promise.all([getDeals(), getLeads()]);
+        setAllDeals(deals.map(d => ({...d, closeDate: new Date(d.closeDate)})));
+        setAllLeads(leadData);
+        setIsLoading(false);
     }, []);
+
+    React.useEffect(() => {
+        loadData();
+        window.addEventListener('userChanged', loadData);
+        return () => window.removeEventListener('userChanged', loadData);
+    }, [loadData]);
+
 
     React.useEffect(() => {
         if (date?.from && date?.to) {
@@ -127,7 +131,7 @@ export default function AnalyticsPage() {
         exportToCsv('analytics_deals.csv', dataToExport);
     }
 
-    const totalLeads = leads.length;
+    const totalLeads = allLeads.length;
     const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won');
     const lostDeals = filteredDeals.filter(d => d.stage === 'Closed Lost');
     const winRate = (wonDeals.length > 0 || lostDeals.length > 0) ? (wonDeals.length / (wonDeals.length + lostDeals.length)) * 100 : 0;

@@ -149,7 +149,7 @@ export default function DashboardPage() {
     };
   }, [isLoading, allDeals, filteredDeals, customers, leads]);
   
-  if (isLoading || !metrics) {
+  if (!isAuthReady || isLoading || !metrics) {
     return (
       <DashboardLayout>
         <div className="flex flex-col w-full">

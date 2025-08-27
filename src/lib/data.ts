@@ -297,7 +297,7 @@ export function getCurrentUser(getLoggedInUser = false): User | null {
         return JSON.parse(viewAsUserJson);
     }
     
-    if (loggedInUser.role === 'Admin' && !viewAsUserJson) {
+    if (loggedInUser.role === 'Admin' && !localStorage.getItem('viewAsUser')) {
         // This is the "Organization View"
         return {
             ...loggedInUser,
@@ -371,13 +371,6 @@ export async function inviteUser(data: { name: string, email: string, role: Role
         
         return newUser;
 
-    } catch (error: any) {
-        console.error("Error inviting user:", error);
-        // Re-throw specific or generic errors to be handled by the UI
-        if (error.code === 'auth/email-already-in-use') {
-            throw new Error("This email address is already in use by another account.");
-        }
-        throw error;
     } finally {
         // IMPORTANT: Clean up the temporary app instance
         await deleteApp(tempApp);
@@ -429,12 +422,16 @@ export async function updateCompanyProfile(profile: Partial<CompanyProfile>): Pr
 
 export async function getCustomers(): Promise<Customer[]> {
     const { organizationId, uid, isOrgView } = await getCurrentUserAuth();
-    let customersQuery = query(collection(db, `organizations/${organizationId}/customers`));
+    const customersCol = collection(db, `organizations/${organizationId}/customers`);
     
-    if (!isOrgView) {
-        customersQuery = query(customersQuery, where("ownerId", "==", uid));
+    if (isOrgView) {
+        // Admin org view: fetch all customers
+        const snapshot = await getDocs(customersCol);
+        return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
     }
 
+    // Regular user view: fetch only their customers
+    const customersQuery = query(customersCol, where("ownerId", "==", uid));
     const snapshot = await getDocs(customersQuery);
     return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
@@ -485,10 +482,15 @@ export async function deleteCustomer(id: string): Promise<void> {
 
 export async function getDeals(): Promise<Deal[]> {
     const { organizationId, uid, isOrgView } = await getCurrentUserAuth();
-    let dealsQuery = query(collection(db, `organizations/${organizationId}/deals`));
-
-    if (!isOrgView) {
-        dealsQuery = query(dealsQuery, where("ownerId", "==", uid));
+    const dealsCol = collection(db, `organizations/${organizationId}/deals`);
+    
+    let dealsQuery;
+    if (isOrgView) {
+        // Admin org view, get all deals
+        dealsQuery = query(dealsCol);
+    } else {
+        // Regular user, get only their deals
+        dealsQuery = query(dealsCol, where("ownerId", "==", uid));
     }
 
     const snapshot = await getDocs(dealsQuery);
@@ -631,10 +633,15 @@ export async function addActivity(customerId: string, activityData: Omit<Activit
 
 export async function getLeads(): Promise<Lead[]> {
     const { organizationId, uid, isOrgView } = await getCurrentUserAuth();
-    let leadsQuery = query(collection(db, `organizations/${organizationId}/leads`));
+    const leadsCol = collection(db, `organizations/${organizationId}/leads`);
 
-    if (!isOrgView) {
-        leadsQuery = query(leadsQuery, where("ownerId", "==", uid));
+    let leadsQuery;
+     if (isOrgView) {
+        // Admin org view, get all deals
+        leadsQuery = query(leadsCol);
+    } else {
+        // Regular user, get only their deals
+        leadsQuery = query(leadsCol, where("ownerId", "==", uid));
     }
 
     const snapshot = await getDocs(leadsQuery);
