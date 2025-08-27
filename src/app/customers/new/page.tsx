@@ -46,8 +46,6 @@ export default function NewCustomerPage() {
       
       const newCustomer = await addCustomer({
         ...data,
-        ownerId: currentUser.id,
-        organizationId: currentUser.organizationId
       });
       
       toast({

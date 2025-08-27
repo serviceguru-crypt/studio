@@ -151,7 +151,7 @@ export function Header({ date, onDateChange }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={currentUser.avatar} alt={currentUser.name} data-ai-hint="person avatar"/>
+                  <AvatarImage src={currentUser.avatar} alt={currentUser.name} />
                   <AvatarFallback>{currentUser.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                 </Avatar>
               </Button>

@@ -8,19 +8,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { getCompanyProfile, updateCompanyProfile, CompanyProfile, getCurrentUser } from '@/lib/data';
+import { getCompanyProfile, updateCompanyProfile, CompanyProfile, getCurrentUser, User, updateCurrentUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Briefcase } from 'lucide-react';
+import { Briefcase, User as UserIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [profile, setProfile] = useState<CompanyProfile | null>(null);
-  const [name, setName] = useState('');
-  const [logo, setLogo] = useState<string | null>(null);
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  
+  const [companyName, setCompanyName] = useState('');
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
+  
+  const [userName, setUserName] = useState('');
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const companyLogoInputRef = useRef<HTMLInputElement>(null);
+  const userAvatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -34,16 +42,16 @@ export default function ProfilePage() {
         router.push('/login');
         return;
       }
+      setCurrentUser(user);
+      setUserName(user.name);
+      setUserAvatar(user.avatar);
       
       try {
         const currentProfile = await getCompanyProfile();
         if (currentProfile) {
-          setProfile(currentProfile);
-          setName(currentProfile.name);
-          setLogo(currentProfile.logo);
-        } else {
-          // This might be a new organization, which is a valid state
-          // We can pre-fill from user registration info if needed, but for now, we'll let them enter it.
+          setCompanyProfile(currentProfile);
+          setCompanyName(currentProfile.name);
+          setCompanyLogo(currentProfile.logo);
         }
       } catch (error: any) {
         toast({
@@ -58,29 +66,41 @@ export default function ProfilePage() {
     loadProfile();
   }, [router, toast]);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'user' | 'company') => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setLogo(reader.result as string);
+        if(type === 'user') {
+            setUserAvatar(reader.result as string);
+        } else {
+            setCompanyLogo(reader.result as string);
+        }
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleSave = async () => {
-    if (profile) {
-      const updatedProfile: CompanyProfile = {
-          ...profile,
-          name: name,
-          logo: logo || profile.logo
+    if (companyProfile && currentUser) {
+      const updatedCompanyProfile: CompanyProfile = {
+          ...companyProfile,
+          name: companyName,
+          logo: companyLogo || companyProfile.logo
       };
+      
+      const updatedUser: User = {
+          ...currentUser,
+          name: userName,
+          avatar: userAvatar || currentUser.avatar,
+      };
+
       try {
-        await updateCompanyProfile(updatedProfile);
+        await updateCompanyProfile(updatedCompanyProfile);
+        await updateCurrentUser(updatedUser);
         toast({
           title: "Profile Saved",
-          description: "Your company profile has been updated.",
+          description: "Your profile has been updated.",
         });
         router.push('/dashboard');
       } catch(error: any) {
@@ -96,7 +116,7 @@ export default function ProfilePage() {
   if (isLoading) {
       return (
         <div className="flex items-center justify-center min-h-screen bg-background">
-          <Card className="w-full max-w-md">
+          <Card className="w-full max-w-lg">
             <CardHeader className="text-center">
                <Skeleton className="h-8 w-48 mx-auto" />
                <Skeleton className="h-4 w-64 mx-auto mt-2" />
@@ -122,47 +142,83 @@ export default function ProfilePage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Company Profile</CardTitle>
+          <CardTitle className="text-2xl">Profile Settings</CardTitle>
           <CardDescription>
-            Set up your organization's details. You can change this later.
+            Update your personal and company details.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-6">
-            <div className="flex flex-col items-center gap-4">
-                <Avatar className="h-24 w-24">
-                    <AvatarImage src={logo || undefined} alt={name} data-ai-hint="company logo"/>
-                    <AvatarFallback>
-                        <Briefcase className="h-10 w-10"/>
-                    </AvatarFallback>
-                </Avatar>
-                <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange}
-                    accept="image/*"
-                    className="hidden"
+        <CardContent className="space-y-8">
+            {/* User Profile Section */}
+            <div className="space-y-4">
+                <h3 className="text-lg font-medium">Your Profile</h3>
+                <div className="flex flex-col items-center gap-4">
+                    <Avatar className="h-24 w-24">
+                        <AvatarImage src={userAvatar || undefined} alt={userName} />
+                        <AvatarFallback>
+                            <UserIcon className="h-10 w-10"/>
+                        </AvatarFallback>
+                    </Avatar>
+                    <input 
+                        type="file" 
+                        ref={userAvatarInputRef} 
+                        onChange={(e) => handleFileChange(e, 'user')}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <Button type="button" variant="outline" onClick={() => userAvatarInputRef.current?.click()}>
+                        Upload Photo
+                    </Button>
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="user-name">Your Name</Label>
+                    <Input
+                        id="user-name"
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Your Name"
+                    />
+                </div>
+            </div>
+
+            {/* Company Profile Section */}
+             {currentUser?.role === 'Admin' && (
+             <div className="space-y-4 pt-6 border-t">
+                <h3 className="text-lg font-medium">Company Profile</h3>
+                 <div className="flex flex-col items-center gap-4">
+                    <Avatar className="h-24 w-24">
+                        <AvatarImage src={companyLogo || undefined} alt={companyName} />
+                        <AvatarFallback>
+                            <Briefcase className="h-10 w-10"/>
+                        </AvatarFallback>
+                    </Avatar>
+                    <input 
+                        type="file" 
+                        ref={companyLogoInputRef} 
+                        onChange={(e) => handleFileChange(e, 'company')}
+                        accept="image/*"
+                        className="hidden"
+                    />
+                    <Button type="button" variant="outline" onClick={() => companyLogoInputRef.current?.click()}>
+                        Upload Logo
+                    </Button>
+                </div>
+                <div className="grid gap-2">
+                <Label htmlFor="company-name">Company Name</Label>
+                <Input
+                    id="company-name"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Your Company Inc."
                 />
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    Upload Logo
-                </Button>
+                </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="company-name">Company Name</Label>
-              <Input
-                id="company-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your Company Inc."
-              />
-            </div>
-          </div>
+             )}
         </CardContent>
         <CardFooter className="flex justify-between">
-            <Button variant="link" onClick={() => router.push('/dashboard')}>Skip for now</Button>
-            <Button onClick={handleSave}>Save and Continue</Button>
+            <Button variant="outline" onClick={() => router.push('/dashboard')}>Cancel</Button>
+            <Button onClick={handleSave}>Save Profile</Button>
         </CardFooter>
       </Card>
     </div>

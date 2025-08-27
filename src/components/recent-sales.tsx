@@ -23,7 +23,7 @@ export function RecentSales({ data, totalSales }: RecentSalesProps) {
                 {data.map((sale) => (
                     <div key={sale.id} className="flex items-center gap-4">
                         <Avatar className="h-9 w-9">
-                            <AvatarImage src={sale.avatar} alt="Avatar" data-ai-hint="person avatar" />
+                            <AvatarImage src={sale.avatar} alt="Avatar" />
                             <AvatarFallback>{sale.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 space-y-1">

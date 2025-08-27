@@ -58,7 +58,7 @@ export function AppSidebar() {
       <SidebarHeader>
         <div className="flex items-center gap-2 p-2">
             <Avatar className="h-8 w-8">
-                <AvatarImage src={companyLogo || undefined} alt={companyName} data-ai-hint="company logo"/>
+                <AvatarImage src={companyLogo || undefined} alt={companyName} />
                 <AvatarFallback>
                     <Briefcase className="h-5 w-5 text-primary"/>
                 </AvatarFallback>

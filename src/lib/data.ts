@@ -147,7 +147,7 @@ export async function registerUser(data: { name: string, email: string, password
         name: data.name,
         email: data.email,
         role: 'Admin',
-        avatar: `https://i.pravatar.cc/150?u=${data.email}`,
+        avatar: '', // Let user upload their own avatar
         organizationId: organizationId,
         tier: data.tier,
     };
@@ -243,7 +243,7 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
         name: user.displayName || 'New User',
         email: user.email!,
         role: 'Admin',
-        avatar: user.photoURL || `https://i.pravatar.cc/150?u=${user.email}`,
+        avatar: user.photoURL || '',
         organizationId: organizationId,
         tier: defaultTier
     };
@@ -301,7 +301,7 @@ export async function inviteUser(data: { name: string, email: string, role: Role
             name: data.name,
             email: data.email,
             role: data.role,
-            avatar: `https://i.pravatar.cc/150?u=${data.email}`,
+            avatar: '', // Let user upload their own avatar
             organizationId: organizationId,
             tier: tier,
         };
@@ -374,14 +374,14 @@ export async function getCustomers(): Promise<Customer[]> {
     return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
 
-export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity' | 'organizationId' | 'ownerId'>): Promise<Customer> {
+export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity' | 'organizationId' | 'ownerId' | 'avatar'>): Promise<Customer> {
     const { uid, organizationId } = await getCurrentUserAuth();
     const customersCol = collection(db, `organizations/${organizationId}/customers`);
     const docRef = await addDoc(customersCol, {
         ...customerData,
         ownerId: uid,
         organizationId,
-        avatar: `https://i.pravatar.cc/150?u=${customerData.email}`,
+        avatar: '', // Let user upload avatar
         status: "Active"
     });
     const newCustomer = await getDoc(docRef);
@@ -623,7 +623,7 @@ export async function convertLeadToCustomer(lead: Lead): Promise<{ customerId: s
         phone: lead.phone,
         organization: lead.organization,
         status: 'Active',
-        avatar: `https://i.pravatar.cc/150?u=${lead.email}`,
+        avatar: '', // Let user upload avatar
         ownerId: uid,
         organizationId,
     };

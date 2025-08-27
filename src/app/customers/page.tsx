@@ -240,7 +240,7 @@ export default function CustomersPage() {
                             <TableRow key={customer.id}>
                                 <TableCell className="hidden sm:table-cell">
                                     <Avatar className="h-9 w-9">
-                                        <AvatarImage src={customer.avatar} alt="Avatar" data-ai-hint="person avatar" />
+                                        <AvatarImage src={customer.avatar} alt="Avatar" />
                                         <AvatarFallback>{customer.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                     </Avatar>
                                 </TableCell>

@@ -180,7 +180,7 @@ export default function CustomerDetailsPage() {
                             <span className="sr-only">Back</span>
                         </Button>
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={customer.avatar} alt={customer.name} data-ai-hint="person avatar"/>
+                            <AvatarImage src={customer.avatar} alt={customer.name} />
                             <AvatarFallback>{customer.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
