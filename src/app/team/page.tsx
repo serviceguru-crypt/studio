@@ -22,12 +22,124 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, getCurrentUser, getUsersForOrganization } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { z } from "zod";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const inviteFormSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  role: z.enum(["Admin", "Sales Rep"]),
+});
+
+type InviteFormValues = z.infer<typeof inviteFormSchema>;
+
+function InviteMemberDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+    const form = useForm<InviteFormValues>({
+        resolver: zodResolver(inviteFormSchema),
+        defaultValues: { role: 'Sales Rep' }
+    });
+
+    const { toast } = useToast();
+
+    async function onSubmit(data: InviteFormValues) {
+        // TODO: Implement invitation logic in the next step
+        console.log("Invitation data:", data);
+        toast({
+            title: "Invitation Sent (Simulated)",
+            description: `${data.name} has been invited to join the team.`,
+        });
+        onOpenChange(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Invite New Team Member</DialogTitle>
+                    <DialogDescription>
+                        Enter the details of the person you want to invite. They will receive an email to set up their account.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Full Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g. Tunde Ojo" {...field} disabled={form.formState.isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email Address</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="e.g. tunde.ojo@example.com" {...field} disabled={form.formState.isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="role"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Role</FormLabel>
+                                     <Select onValueChange={field.onChange} value={field.value} disabled={form.formState.isSubmitting}>
+                                        <FormControl>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a role" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="Sales Rep">Sales Rep</SelectItem>
+                                            <SelectItem value="Admin">Admin</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                            <Button type="submit" disabled={form.formState.isSubmitting}>
+                                {form.formState.isSubmitting ? "Sending..." : "Send Invitation"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 export default function TeamPage() {
     const router = useRouter();
@@ -35,6 +147,8 @@ export default function TeamPage() {
     const [teamMembers, setTeamMembers] = React.useState<User[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+    const [isInviteDialogOpen, setIsInviteDialogOpen] = React.useState(false);
+
 
     React.useEffect(() => {
         const user = getCurrentUser();
@@ -100,7 +214,7 @@ export default function TeamPage() {
                             <h1 className="text-2xl font-semibold">Team Management</h1>
                             <p className="text-muted-foreground">Invite and manage your team members.</p>
                         </div>
-                        <Button size="sm" className="h-8 gap-1">
+                        <Button size="sm" className="h-8 gap-1" onClick={() => setIsInviteDialogOpen(true)}>
                             <PlusCircle className="h-3.5 w-3.5" />
                             <span className="sr-only sm:not-sr-only sm:whitespace-rap">
                             Invite Member
@@ -186,6 +300,9 @@ export default function TeamPage() {
                     </Card>
                 </main>
             </div>
+            <InviteMemberDialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} />
         </DashboardLayout>
     );
 }
+
+    
