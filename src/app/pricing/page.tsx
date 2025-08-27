@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Check, Star } from 'lucide-react';
@@ -18,7 +19,8 @@ const tiers = [
     description: 'For individuals and small teams getting started.',
     features: [
       'Core CRM functionalities',
-      'Manage customers, deals, and leads',
+      'Manage customers & deals',
+      '25 leads per month',
       'Standard dashboard analytics',
       'Calendar view',
     ],
@@ -32,9 +34,10 @@ const tiers = [
     description: 'For growing teams that need more power and automation.',
     features: [
       'All features from Starter',
+      'Unlimited leads',
+      'Add team members (₦4,500/user/month)',
       'AI Deal Journey Analysis',
-      'AI Email Composer',
-      'AI Lead Scoring',
+      'AI Email Composer & Lead Scoring',
       'Advanced analytics & data export',
     ],
     cta: 'Choose Pro',
@@ -48,10 +51,10 @@ const tiers = [
     description: 'For large organizations with advanced needs.',
     features: [
       'All features from Pro',
+      'Unlimited team members',
       'Role-based access control',
       'Third-party integrations (WhatsApp, etc.)',
-      'Priority support',
-      'Single Sign-On (SSO)',
+      'Priority support & SSO',
     ],
     cta: 'Choose Enterprise',
     tier: 'Enterprise' as Tier,
@@ -97,11 +100,11 @@ function PricingContent() {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-background p-4">
-            <div className="w-full max-w-5xl">
+            <div className="w-full max-w-6xl">
                 <CardHeader className="text-center">
                     <CardTitle className="text-4xl font-bold tracking-tight">Choose Your Plan</CardTitle>
                     <CardDescription className="text-lg text-muted-foreground">
-                        Start for free, then upgrade as you grow.
+                        Start for free, then upgrade as you grow. No credit card required for Starter.
                     </CardDescription>
                 </CardHeader>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">

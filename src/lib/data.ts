@@ -3,10 +3,11 @@
 "use client";
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch, Timestamp } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, User as FirebaseUser } from 'firebase/auth';
 import { z } from 'zod';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 
 // --- TYPE DEFINITIONS ---
@@ -120,15 +121,16 @@ const ensureAuthReady = (): Promise<FirebaseUser | null> => {
 
 // Helper to get current user's auth UID and organization ID
 async function getCurrentUserAuth() {
-    const user = await ensureAuthReady();
+    await ensureAuthReady();
+    const user = getCurrentUser();
     if (!user) {
         throw new Error("Not authenticated. Please log in.");
     }
-    const organizationId = localStorage.getItem('organizationId');
+    const organizationId = user.organizationId;
     if (!organizationId) {
         throw new Error("Organization ID not found. Please log in again.");
     }
-    return { uid: user.uid, organizationId };
+    return { uid: user.id, organizationId, tier: user.tier };
 }
 
 
@@ -513,9 +515,24 @@ export async function getLeads(): Promise<Lead[]> {
 }
 
 export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status' | 'ownerId' | 'organizationId'>): Promise<Lead> {
-    const { uid, organizationId } = await getCurrentUserAuth();
-    const leadsCol = collection(db, `organizations/${organizationId}/leads`);
+    const { uid, organizationId, tier } = await getCurrentUserAuth();
+
+    // Enforce lead limit for Starter tier
+    if (tier === 'Starter') {
+        const now = new Date();
+        const start = startOfMonth(now);
+        const end = endOfMonth(now);
+
+        const leadsCol = collection(db, `organizations/${organizationId}/leads`);
+        const q = query(leadsCol, where("createdAt", ">=", start), where("createdAt", "<=", end));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.size >= 25) {
+            throw new Error("You have reached your monthly lead limit of 25 for the Starter plan. Please upgrade to Pro for unlimited leads.");
+        }
+    }
     
+    const leadsCol = collection(db, `organizations/${organizationId}/leads`);
     const newLeadData = {
         ...leadData,
         createdAt: new Date(),

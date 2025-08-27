@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy, Calendar, Building, UserPlus } from 'lucide-react';
+import { Home, Users, Briefcase, BarChart, Settings, LifeBuoy, Calendar, Building, UserPlus, Users2 } from 'lucide-react';
 import {
   Sidebar,
   SidebarHeader,
@@ -30,6 +31,8 @@ export function AppSidebar() {
   const pathname = usePathname();
   const [companyName, setCompanyName] = useState('N-CRM');
   const [companyLogo, setCompanyLogo] = useState('');
+  const [userTier, setUserTier] = useState<string | undefined>('');
+
 
   useEffect(() => {
     async function loadProfile() {
@@ -37,6 +40,7 @@ export function AppSidebar() {
         // Only fetch profile if a user is actually logged in.
         // This prevents auth errors on page load.
         if (user) { 
+            setUserTier(user.tier);
             const profile = await getCompanyProfile();
             if(profile) {
                 setCompanyName(profile.name);
@@ -46,6 +50,8 @@ export function AppSidebar() {
     }
     loadProfile();
   }, [pathname]); // Re-run on navigation to update if needed
+
+  const showTeamManagement = userTier === 'Pro' || userTier === 'Enterprise';
 
   return (
     <Sidebar>
@@ -72,6 +78,16 @@ export function AppSidebar() {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
+           {showTeamManagement && (
+             <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname.startsWith('/team')} tooltip={{children: 'Team', side:"right"}}>
+                <Link href="/team">
+                  <Users2 />
+                  <span>Team</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+           )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-2">
