@@ -300,26 +300,18 @@ export async function inviteUser(data: { name: string, email: string, role: Role
     const { organizationId, tier } = await getCurrentUserAuth();
 
     // Use a temporary, uniquely named app instance for this operation
-    // This is crucial to avoid conflicts with the main app's auth state
     const tempAppName = `temp-invite-app-${Date.now()}`;
     const tempApp = initializeApp(firebaseConfig, tempAppName);
     const tempAuth = getAuth(tempApp);
 
     try {
-        // First, check if the user is already part of ANY organization's user list in Firestore.
-        // This is a more robust check than just checking Firebase Auth.
-        const orgsSnapshot = await getDocs(collection(db, "organizations"));
-        for (const orgDoc of orgsSnapshot.docs) {
-            const usersSnapshot = await getDocs(collection(db, `organizations/${orgDoc.id}/users`));
-            for (const userDoc of usersSnapshot.docs) {
-                if (userDoc.data().email === data.email) {
-                    throw new Error("This email is already registered to a user in an organization.");
-                }
-            }
+        // Check if the email is already in use in Firebase Auth
+        const signInMethods = await fetchSignInMethodsForEmail(tempAuth, data.email);
+        if (signInMethods.length > 0) {
+            throw new Error("This email address is already in use by another account.");
         }
-        
-        // If the loop completes, the email is not in our Firestore user records.
-        // Now, we can safely attempt to create the user in Firebase Auth.
+
+        // If the email is not in use, create the new user
         const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
         const userId = userCredential.user.uid;
 
@@ -340,16 +332,14 @@ export async function inviteUser(data: { name: string, email: string, role: Role
 
     } catch (error: any) {
         console.error("Error inviting user:", error);
-        if (error.code === 'auth/email-already-in-use') {
-             throw new Error("This email address is already in use by another account.");
-        }
-        // Re-throw other errors
+        // Re-throw specific or generic errors to be handled by the UI
         throw error;
     } finally {
         // IMPORTANT: Clean up the temporary app instance
         await deleteApp(tempApp);
     }
 }
+
 
 export async function deleteUser(userId: string): Promise<void> {
     const { organizationId } = await getCurrentUserAuth();
@@ -646,7 +636,7 @@ export async function convertLeadToCustomer(lead: Lead): Promise<{ customerId: s
         phone: lead.phone,
         organization: lead.organization,
         status: 'Active',
-        avatar: '', // Let user upload avatar
+        avatar: '', // Default empty avatar
         ownerId: uid,
         organizationId,
     };
