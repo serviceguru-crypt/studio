@@ -7,7 +7,7 @@ const nextConfig = {
         destination: '/login',
         permanent: true,
       },
-    ]
+    ];
   },
 };
 
