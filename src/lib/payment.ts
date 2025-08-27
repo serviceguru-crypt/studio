@@ -1,14 +1,7 @@
 
 'use server';
 
-import Flutterwave from 'flutterwave-node-v3';
 import { Tier } from './data';
-import { redirect } from 'next/navigation';
-
-const flw = new Flutterwave(
-  process.env.FLUTTERWAVE_PUBLIC_KEY!,
-  process.env.FLUTTERWAVE_SECRET_KEY!
-);
 
 export async function createPaymentLink(
   signupData: {
@@ -22,8 +15,6 @@ export async function createPaymentLink(
   tier: Tier
 ) {
   try {
-    // We are embedding the signup data into the transaction reference so we can
-    // retrieve it in the webhook after payment is complete.
     const tx_ref = `NCRM-${tier}-${Date.now()}`;
     const encodedSignupData = Buffer.from(JSON.stringify(signupData)).toString('base64');
 
@@ -44,17 +35,26 @@ export async function createPaymentLink(
         signupData: encodedSignupData
       }
     };
+    
+    const response = await fetch('https://api.flutterwave.com/v3/payments', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+    
+    const data = await response.json();
 
-    const response = await flw.PaymentLink.create(payload);
-
-    if (response.status === 'success') {
-      return response.data.link;
+    if (data.status === 'success') {
+      return data.data.link;
     } else {
-      throw new Error('Failed to initiate payment with Flutterwave.');
+      console.error('Flutterwave API Error:', data);
+      throw new Error(data.message || 'Failed to initiate payment with Flutterwave.');
     }
   } catch (error) {
     console.error('Flutterwave Error:', error);
-    // It's good practice to re-throw or handle the error appropriately
     if (error instanceof Error) {
         throw new Error(`Payment initiation failed: ${error.message}`);
     }

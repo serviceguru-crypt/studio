@@ -1,12 +1,29 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import Flutterwave from 'flutterwave-node-v3';
 import { registerUser } from '@/lib/data';
 
-const flw = new Flutterwave(
-  process.env.FLUTTERWAVE_PUBLIC_KEY!,
-  process.env.FLUTTERWAVE_SECRET_KEY!
-);
+async function verifyTransaction(transactionId: string) {
+    const url = `https://api.flutterwave.com/v3/transactions/${transactionId}/verify`;
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${process.env.FLUTTERWAVE_SECRET_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Flutterwave API responded with status: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch(error) {
+        console.error("Error verifying transaction with Flutterwave:", error);
+        throw error;
+    }
+}
+
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -15,15 +32,15 @@ export async function GET(request: NextRequest) {
   const transaction_id = searchParams.get('transaction_id');
 
   if (status === 'cancelled') {
-    // Redirect to pricing page with a cancellation message
     return NextResponse.redirect(new URL('/pricing?status=cancelled', request.url));
   }
 
   if (status === 'successful' && transaction_id) {
     try {
-      const response = await flw.Transaction.verify({ id: transaction_id });
+      const response = await verifyTransaction(transaction_id);
 
       if (
+        response.status === "success" &&
         response.data.status === "successful" &&
         response.data.tx_ref === tx_ref
       ) {
@@ -35,14 +52,11 @@ export async function GET(request: NextRequest) {
 
         const signupData = JSON.parse(Buffer.from(signupDataEncoded, 'base64').toString('utf-8'));
         
-        // Register the user
         await registerUser(signupData);
 
-        // Redirect to login page after successful registration
         return NextResponse.redirect(new URL('/login?payment=success', request.url));
 
       } else {
-        // Verification failed
         return NextResponse.redirect(new URL('/pricing?status=failed', request.url));
       }
     } catch (error) {
