@@ -21,6 +21,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
 
 const activityFormSchema = z.object({
   type: z.enum(['Email', 'Call', 'Meeting', 'Note']),
@@ -135,6 +137,38 @@ export default function CustomerDetailsPage() {
         )
     }
 
+    const AiEmailButton = () => {
+        if (isProFeatureEnabled) {
+            return (
+                <Button variant="outline" size="sm" onClick={() => setIsComposerOpen(true)}>
+                    <MessageSquarePlus className="h-4 w-4 mr-2" />
+                    Compose AI Email
+                </Button>
+            );
+        }
+
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <div className="relative">
+                            <Button variant="outline" size="sm" disabled>
+                                <MessageSquarePlus className="h-4 w-4 mr-2" />
+                                Compose AI Email
+                            </Button>
+                            <div className="absolute top-[-5px] right-[-5px]">
+                                <Zap className="h-4 w-4 text-yellow-400 fill-yellow-400"/>
+                            </div>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>This is a Pro feature. <Link href="/pricing" className="underline font-bold">Upgrade your plan</Link> to use the AI Email Composer.</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    };
+
     return (
         <DashboardLayout>
             <div className="flex flex-col w-full">
@@ -154,18 +188,7 @@ export default function CustomerDetailsPage() {
                              <p className="text-sm text-muted-foreground">{customer.organization}</p>
                         </div>
                         <div className="hidden items-center gap-2 md:ml-auto md:flex">
-                             {isProFeatureEnabled ? (
-                                <Button variant="outline" size="sm" onClick={() => setIsComposerOpen(true)}>
-                                    <MessageSquarePlus className="h-4 w-4 mr-2" />
-                                    Compose AI Email
-                                </Button>
-                             ) : (
-                                <Button variant="default" size="sm" asChild>
-                                    <Link href="/pricing">
-                                        <Zap className="h-4 w-4 mr-2" /> Upgrade to Pro
-                                    </Link>
-                                </Button>
-                             )}
+                             <AiEmailButton />
                              <Button asChild size="sm">
                                 <Link href={`/customers/${customer.id}/edit`}>
                                     <Edit className="h-4 w-4 mr-2" />

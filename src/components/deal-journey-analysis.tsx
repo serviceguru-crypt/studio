@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Deal, Tier } from '@/lib/data';
 import { analyzeDealJourney } from '@/ai/flows/analyze-deal-journey-flow';
 import Link from 'next/link';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface DealJourneyAnalysisProps {
     deal: Deal;
@@ -22,18 +23,9 @@ export function DealJourneyAnalysis({ deal, userTier }: DealJourneyAnalysisProps
     const [analysis, setAnalysis] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const isProFeature = userTier === 'Pro' || userTier === 'Enterprise';
+    const isProFeatureEnabled = userTier === 'Pro' || userTier === 'Enterprise';
 
     const getAnalysis = async () => {
-        if (!isProFeature) {
-            toast({
-                title: 'Upgrade Required',
-                description: 'AI Deal Analysis is a Pro feature. Please upgrade to use it.',
-                variant: 'destructive'
-            });
-            return;
-        }
-
         setLoading(true);
         setAnalysis('');
         try {
@@ -68,13 +60,41 @@ export function DealJourneyAnalysis({ deal, userTier }: DealJourneyAnalysisProps
         }
     };
 
-    const UpgradeButton = () => (
-         <Button variant="default" size="sm" className="w-full" asChild>
-            <Link href="/settings/billing">
-                <Zap className="h-4 w-4 mr-2" /> Upgrade to Pro
-            </Link>
-        </Button>
-    )
+    const AnalysisButton = () => {
+         if (isProFeatureEnabled) {
+            return (
+                 <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={getAnalysis} 
+                    disabled={loading}
+                    className="w-full"
+                >
+                    {loading ? 'Analyzing...' : (analysis ? 'Regenerate Analysis' : 'Analyze Deal Journey')}
+                </Button>
+            );
+        }
+
+        return (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="relative w-full">
+                            <Button variant="outline" size="sm" disabled className="w-full">
+                                Analyze Deal Journey
+                            </Button>
+                             <div className="absolute top-[-5px] right-[-5px]">
+                                <Zap className="h-4 w-4 text-yellow-400 fill-yellow-400"/>
+                            </div>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>This is a Pro feature. <Link href="/pricing" className="underline font-bold">Upgrade your plan</Link> to use AI Deal Analysis.</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        );
+    }
 
 
     return (
@@ -86,7 +106,7 @@ export function DealJourneyAnalysis({ deal, userTier }: DealJourneyAnalysisProps
                 <CardDescription>Get AI-powered insights on this deal's journey.</CardDescription>
             </CardHeader>
             <CardContent>
-                {analysis && !loading && isProFeature && (
+                {analysis && !loading && isProFeatureEnabled && (
                      <p className="text-sm text-muted-foreground whitespace-pre-wrap mb-4">
                         {analysis}
                     </p>
@@ -98,20 +118,7 @@ export function DealJourneyAnalysis({ deal, userTier }: DealJourneyAnalysisProps
                         <Skeleton className="h-4 w-4/5" />
                     </div>
                 )}
-                
-                {isProFeature ? (
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={getAnalysis} 
-                        disabled={loading}
-                        className="w-full"
-                    >
-                        {loading ? 'Analyzing...' : (analysis ? 'Regenerate Analysis' : 'Analyze Deal Journey')}
-                    </Button>
-                ) : (
-                    <UpgradeButton />
-                )}
+                <AnalysisButton />
             </CardContent>
         </Card>
     );

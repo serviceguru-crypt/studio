@@ -53,15 +53,22 @@ export default function DealDetailsPage() {
     const [isAuthReady, setIsAuthReady] = useState(false);
 
     useEffect(() => {
-        setCurrentUser(getCurrentUser());
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setIsAuthReady(true);
-            } else {
-                router.push('/login');
-            }
-        });
-        return () => unsubscribe();
+        const user = getCurrentUser();
+        if (user) {
+            setCurrentUser(user);
+            setIsAuthReady(true);
+        } else {
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const storedUser = getCurrentUser();
+                    setCurrentUser(storedUser);
+                    setIsAuthReady(true);
+                } else {
+                    router.push('/login');
+                }
+                unsubscribe();
+            });
+        }
     }, [router]);
 
     const fetchDealDetails = useCallback(async () => {
@@ -223,5 +230,3 @@ export default function DealDetailsPage() {
         </DashboardLayout>
     );
 }
-
-    
