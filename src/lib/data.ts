@@ -102,14 +102,12 @@ const db = getFirestore(app);
 export const auth = getAuth(app);
 
 // --- UTILITY FUNCTIONS ---
-let authReady = false;
 let authPromise: Promise<FirebaseUser | null> | null = null;
 
 const ensureAuthReady = (): Promise<FirebaseUser | null> => {
     if (!authPromise) {
         authPromise = new Promise((resolve) => {
             const unsubscribe = onAuthStateChanged(auth, (user) => {
-                authReady = true;
                 resolve(user);
                 unsubscribe();
             });
@@ -438,7 +436,7 @@ export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity'
         ...customerData,
         ownerId: uid,
         organizationId,
-        avatar: "", // Default empty avatar
+        avatar: "",
         status: "Active"
     });
     const newCustomer = await getDoc(docRef);
@@ -737,3 +735,6 @@ export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
 
+
+
+    
