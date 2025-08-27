@@ -1,9 +1,9 @@
-// This file will contain all the functions to interact with the Firebase Firestore database.
-// We will replace the localStorage logic with actual Firebase SDK calls.
+
+"use client";
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
 // --- TYPE DEFINITIONS ---
 
@@ -72,7 +72,6 @@ export type Customer = {
 
 // --- FIREBASE INITIALIZATION ---
 
-// Your web app's Firebase configuration will be stored in environment variables
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -87,11 +86,7 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-
-// --- MOCK DATA (For UI development without real data) ---
-// These will be removed as we implement the Firestore functions.
-export const salesData: any[] = [];
-export const revenueData: any[] = [];
+// --- MOCK DATA ---
 export const leadsSourceData: { name: string; count: number; fill: string }[] = [
     { name: 'Social Media', count: 25, fill: 'var(--color-chart-1)' },
     { name: 'Website', count: 35, fill: 'var(--color-chart-2)' },
@@ -99,126 +94,256 @@ export const leadsSourceData: { name: string; count: number; fill: string }[] = 
     { name: 'Advertisement', count: 20, fill: 'var(--color-chart-4)' },
     { name: 'Email', count: 5, fill: 'var(--color-chart-5)' },
 ];
-export const recentSales: any[] = [];
-export const teamPerformance: any[] = [];
+
+
+let customers: Customer[] = [];
+let deals: Deal[] = [];
+let leads: Lead[] = [];
+let users: User[] = [];
+let companyProfile: CompanyProfile | null = null;
+let initialized = false;
+
+const initializeData = () => {
+    if (typeof window !== 'undefined' && !initialized) {
+        customers = JSON.parse(localStorage.getItem('customers') || '[]').map((c: any) => ({ ...c, activity: c.activity ? c.activity.map((a: any) => ({...a, date: new Date(a.date)})) : [] }));
+        deals = JSON.parse(localStorage.getItem('deals') || '[]').map((d: any) => ({...d, closeDate: new Date(d.closeDate)}));
+        leads = JSON.parse(localStorage.getItem('leads') || '[]').map((l: any) => ({...l, createdAt: new Date(l.createdAt)}));
+        users = JSON.parse(localStorage.getItem('users') || '[]');
+        companyProfile = JSON.parse(localStorage.getItem('companyProfile') || 'null');
+        initialized = true;
+
+        if (users.length === 0) {
+             const adminUser = {
+                id: 'user-1',
+                name: 'Admin User',
+                email: 'admin@example.com',
+                password: 'password123',
+                role: 'Admin',
+                avatar: `https://i.pravatar.cc/150?u=user-1`,
+                organizationId: 'org-1'
+            };
+            const salesUser = {
+                id: 'user-2',
+                name: 'Sales Rep',
+                email: 'sales@example.com',
+                password: 'password123',
+                role: 'Sales Rep',
+                avatar: `https://i.pravatar.cc/150?u=user-2`,
+                organizationId: 'org-1'
+            };
+            users.push(adminUser, salesUser);
+            localStorage.setItem('users', JSON.stringify(users));
+        }
+    }
+};
+
+
+initializeData();
 
 
 // --- AUTH FUNCTIONS ---
 
 export async function registerUser(data: {name: string, email: string, password: string, organizationName: string }): Promise<User> {
-    // TODO: Implement Firebase Auth user creation and Firestore document creation.
-    console.log("registerUser called with:", data);
-    // This is a placeholder.
-    return Promise.reject("Function not implemented.");
+    initializeData();
+    const existingUser = users.find(u => u.email === data.email);
+    if(existingUser) {
+        throw new Error("An account with this email already exists.");
+    }
+    const organizationId = `org-${Date.now()}`;
+    const newUser: User = {
+        id: `user-${Date.now()}`,
+        name: data.name,
+        email: data.email,
+        role: 'Admin',
+        avatar: `https://i.pravatar.cc/150?u=${data.email}`,
+        organizationId: organizationId,
+    };
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+    const newCompanyProfile: CompanyProfile = {
+        id: organizationId,
+        name: data.organizationName,
+        logo: '',
+    };
+    companyProfile = newCompanyProfile;
+    localStorage.setItem('companyProfile', JSON.stringify(newCompanyProfile));
+    
+    // This is a simulation, so we'll store the password in a separate, insecure way.
+    // In a real app, Firebase Auth handles this securely.
+    localStorage.setItem(`password_${data.email}`, data.password);
+
+    return newUser;
 };
 
 export async function loginUser(email: string, password: string): Promise<User | null> {
-    // TODO: Implement Firebase Auth sign-in.
-    console.log("loginUser called with:", email);
-    // This is a placeholder.
-    return Promise.reject("Function not implemented.");
+    initializeData();
+    const user = users.find(u => u.email === email);
+    const storedPassword = localStorage.getItem(`password_${email}`);
+    if (user && storedPassword === password) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        return user;
+    }
+    return null;
 };
 
 export function getCurrentUser(): User | null {
-    // This will be replaced with Firebase Auth's onAuthStateChanged listener in the UI.
-    return null;
+    if (typeof window === 'undefined') return null;
+    const userJson = localStorage.getItem('currentUser');
+    return userJson ? JSON.parse(userJson) : null;
 }
 
 // --- COMPANY PROFILE FUNCTIONS ---
 
-export async function getCompanyProfile(): Promise<CompanyProfile | null> {
-    // TODO: Implement Firestore document fetch.
-    return Promise.reject("Function not implemented.");
+export function getCompanyProfile(): CompanyProfile | null {
+    initializeData();
+    return companyProfile;
 }
 
 export async function updateCompanyProfile(profile: CompanyProfile): Promise<void> {
-    // TODO: Implement Firestore document update.
-    console.log("updateCompanyProfile called with:", profile);
-    return Promise.reject("Function not implemented.");
+    companyProfile = profile;
+    localStorage.setItem('companyProfile', JSON.stringify(profile));
+    return Promise.resolve();
 }
 
 // --- CUSTOMER FUNCTIONS ---
 
 export async function getCustomers(): Promise<Customer[]> {
-    // TODO: Implement Firestore collection fetch.
-    console.log("getCustomers called");
-    return [];
+    initializeData();
+    const currentUser = getCurrentUser();
+    if (!currentUser) return [];
+    return customers.filter(c => c.organizationId === currentUser.organizationId);
 };
 
 export async function addCustomer(customerData: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity'>): Promise<Customer> {
-    // TODO: Implement Firestore document creation.
-    console.log("addCustomer called with:", customerData);
-    return Promise.reject("Function not implemented.");
+    initializeData();
+    const newCustomer: Customer = {
+        ...customerData,
+        id: `cust-${Date.now()}`,
+        status: 'Active',
+        avatar: `https://i.pravatar.cc/150?u=${customerData.email}`,
+        activity: []
+    };
+    customers.push(newCustomer);
+    localStorage.setItem('customers', JSON.stringify(customers));
+    return newCustomer;
 };
 
 export async function getCustomerById(id: string): Promise<Customer | undefined> {
-    // TODO: Implement Firestore document fetch.
-    console.log("getCustomerById called with:", id);
-    return Promise.reject("Function not implemented.");
+    initializeData();
+    return customers.find(c => c.id === id);
 }
 
-export async function updateCustomer(id: string, updatedData: Partial<Omit<Customer, 'id' | 'avatar'>>): Promise<Customer | null> {
-    // TODO: Implement Firestore document update.
-    console.log("updateCustomer called with:", id, updatedData);
-    return Promise.reject("Function not implemented.");
+export async function updateCustomer(id: string, updatedData: Partial<Omit<Customer, 'id'>>): Promise<Customer | null> {
+    initializeData();
+    let customerToUpdate = customers.find(c => c.id === id);
+    if(customerToUpdate) {
+        customerToUpdate = { ...customerToUpdate, ...updatedData };
+        customers = customers.map(c => c.id === id ? customerToUpdate! : c);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        return customerToUpdate;
+    }
+    return null;
 };
 
 export async function deleteCustomer(id: string): Promise<void> {
-    // TODO: Implement Firestore document deletion.
-    console.log("deleteCustomer called with:", id);
-    return Promise.reject("Function not implemented.");
+    customers = customers.filter(c => c.id !== id);
+    localStorage.setItem('customers', JSON.stringify(customers));
+    return Promise.resolve();
 };
 
 // --- DEAL FUNCTIONS ---
 
 export async function getDeals(): Promise<Deal[]> {
-    // TODO: Implement Firestore collection fetch.
-    console.log("getDeals called");
-    return [];
+    initializeData();
+    const currentUser = getCurrentUser();
+    if (!currentUser) return [];
+    const userCustomers = await getCustomers();
+    const userCustomerIds = new Set(userCustomers.map(c => c.id));
+    
+    const userDeals = deals.filter(d => d.organizationId === currentUser.organizationId);
+    
+    return userDeals.map(deal => {
+        const customer = userCustomers.find(c => c.id === deal.customerId);
+        return {
+            ...deal,
+            company: customer?.organization || 'N/A'
+        }
+    });
 };
 
-export async function addDeal(deal: Omit<Deal, 'id'>): Promise<Deal> {
-    // TODO: Implement Firestore document creation.
-    console.log("addDeal called with:", deal);
-    return Promise.reject("Function not implemented.");
+export async function addDeal(dealData: Omit<Deal, 'id' | 'organizationId'> & { ownerId: string, organizationId: string }): Promise<Deal> {
+    initializeData();
+    const newDeal: Deal = {
+        ...dealData,
+        id: `deal-${Date.now()}`,
+    };
+    deals.push(newDeal);
+localStorage.setItem('deals', JSON.stringify(deals));
+    return newDeal;
 };
 
 export async function getDealById(id: string): Promise<Deal | undefined> {
-    // TODO: Implement Firestore document fetch.
-    console.log("getDealById called with:", id);
-    return Promise.reject("Function not implemented.");
+    initializeData();
+    return deals.find(d => d.id === id);
 }
 
 export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id'>>): Promise<Deal | null> {
-    // TODO: Implement Firestore document update.
-    console.log("updateDeal called with:", id, updatedData);
-    return Promise.reject("Function not implemented.");
+    initializeData();
+    let dealToUpdate = deals.find(d => d.id === id);
+    if(dealToUpdate) {
+        dealToUpdate = { ...dealToUpdate, ...updatedData };
+        deals = deals.map(d => d.id === id ? dealToUpdate! : d);
+        localStorage.setItem('deals', JSON.stringify(deals));
+        return dealToUpdate;
+    }
+    return null;
 };
 
 export async function deleteDeal(id: string): Promise<void> {
-    // TODO: Implement Firestore document deletion.
-    console.log("deleteDeal called with:", id);
-    return Promise.reject("Function not implemented.");
+    deals = deals.filter(d => d.id !== id);
+    localStorage.setItem('deals', JSON.stringify(deals));
+    return Promise.resolve();
 };
 
 // --- ACTIVITY FUNCTIONS ---
 
-export async function addActivity(customerId: string, activity: Omit<Activity, 'id' | 'date'>): Promise<Customer | null> {
-    // TODO: Implement Firestore sub-collection document creation.
-    console.log("addActivity called with:", customerId, activity);
-    return Promise.reject("Function not implemented.");
+export async function addActivity(customerId: string, activityData: Omit<Activity, 'id' | 'date'>): Promise<Customer | null> {
+    initializeData();
+    let customer = customers.find(c => c.id === customerId);
+    if (customer) {
+        const newActivity: Activity = {
+            ...activityData,
+            id: `act-${Date.now()}`,
+            date: new Date(),
+        };
+        customer.activity = customer.activity ? [newActivity, ...customer.activity] : [newActivity];
+        customers = customers.map(c => c.id === customerId ? customer! : c);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        return customer;
+    }
+    return null;
 }
 
 // --- LEAD FUNCTIONS ---
 
 export async function getLeads(): Promise<Lead[]> {
-    // TODO: Implement Firestore collection fetch.
-    console.log("getLeads called");
-    return [];
+    initializeData();
+    const currentUser = getCurrentUser();
+    if (!currentUser) return [];
+    return leads.filter(l => l.organizationId === currentUser.organizationId);
 }
 
 export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status'>): Promise<Lead> {
-    // TODO: Implement Firestore document creation.
-    console.log("addLead called with:", leadData);
-    return Promise.reject("Function not implemented.");
+    initializeData();
+    const newLead: Lead = {
+        ...leadData,
+        id: `lead-${Date.now()}`,
+        createdAt: new Date(),
+        status: 'New'
+    };
+    leads.push(newLead);
+    localStorage.setItem('leads', JSON.stringify(leads));
+    return newLead;
 }
