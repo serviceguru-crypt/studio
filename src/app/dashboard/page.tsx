@@ -36,12 +36,15 @@ export default function DashboardPage() {
     from: addDays(new Date(), -30),
     to: new Date(),
   });
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
 
   useEffect(() => {
-    // This is a placeholder for proper auth handling
-    const loggedInUser = getCurrentUser(true); // Get the actual logged-in user
+    const loggedInUser = getCurrentUser(true);
     if (!loggedInUser) {
       router.replace('/login');
+    } else {
+      setIsAuthReady(true);
     }
   }, [router]);
 
@@ -62,19 +65,20 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
-    // Re-fetch data when the component mounts and when the window gains focus
-    window.addEventListener('focus', fetchData);
+    if (!isAuthReady) return;
+
+    const handleDataFetch = () => fetchData();
+    handleDataFetch(); // Initial fetch
     
-    // Add a custom event listener to refetch data when the user context changes
-    const handleUserChange = () => fetchData();
-    window.addEventListener('userChanged', handleUserChange);
+    // Set up listeners
+    window.addEventListener('focus', handleDataFetch);
+    window.addEventListener('userChanged', handleDataFetch);
     
     return () => {
-      window.removeEventListener('focus', fetchData);
-      window.removeEventListener('userChanged', handleUserChange);
+      window.removeEventListener('focus', handleDataFetch);
+      window.removeEventListener('userChanged', handleDataFetch);
     };
-  }, [fetchData]);
+  }, [isAuthReady, fetchData]);
   
   const filteredDeals = useMemo(() => {
     if (!date?.from || !date?.to) return allDeals;
