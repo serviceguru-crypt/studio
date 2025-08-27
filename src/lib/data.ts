@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { initializeApp, getApps, getApp, deleteApp } from 'firebase/app';
@@ -346,13 +347,11 @@ export async function inviteUser(data: { name: string, email: string, role: Role
     const tempAuth = getAuth(tempApp);
 
     try {
-        // Check if the email is already in use in Firebase Auth
         const signInMethods = await fetchSignInMethodsForEmail(tempAuth, data.email);
         if (signInMethods.length > 0) {
             throw new Error("This email address is already in use by another account.");
         }
 
-        // If the email is not in use, create the new user
         const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
         const userId = userCredential.user.uid;
 
@@ -372,7 +371,6 @@ export async function inviteUser(data: { name: string, email: string, role: Role
         return newUser;
 
     } finally {
-        // IMPORTANT: Clean up the temporary app instance
         await deleteApp(tempApp);
     }
 }
@@ -381,10 +379,6 @@ export async function inviteUser(data: { name: string, email: string, role: Role
 export async function deleteUser(userId: string): Promise<void> {
     const { organizationId } = await getCurrentUserAuth();
     const userDocRef = doc(db, `organizations/${organizationId}/users`, userId);
-    
-    // This only deletes the user's record from the organization's collection in Firestore.
-    // It does NOT delete the user from Firebase Authentication. This is a deliberate design
-    // choice. A full user deletion would require admin privileges and a backend function.
     await deleteDoc(userDocRef);
 }
 
@@ -424,14 +418,15 @@ export async function getCustomers(): Promise<Customer[]> {
     const { organizationId, uid, isOrgView } = await getCurrentUserAuth();
     const customersCol = collection(db, `organizations/${organizationId}/customers`);
     
+    let customersQuery;
     if (isOrgView) {
         // Admin org view: fetch all customers
-        const snapshot = await getDocs(customersCol);
-        return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
+        customersQuery = query(customersCol);
+    } else {
+        // Regular user view: fetch only their customers
+        customersQuery = query(customersCol, where("ownerId", "==", uid));
     }
 
-    // Regular user view: fetch only their customers
-    const customersQuery = query(customersCol, where("ownerId", "==", uid));
     const snapshot = await getDocs(customersQuery);
     return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
@@ -637,10 +632,10 @@ export async function getLeads(): Promise<Lead[]> {
 
     let leadsQuery;
      if (isOrgView) {
-        // Admin org view, get all deals
+        // Admin org view, get all leads
         leadsQuery = query(leadsCol);
     } else {
-        // Regular user, get only their deals
+        // Regular user, get only their leads
         leadsQuery = query(leadsCol, where("ownerId", "==", uid));
     }
 
@@ -727,6 +722,12 @@ export async function convertLeadToCustomer(lead: Lead): Promise<{ customerId: s
     };
 }
 
+export async function assignLead(leadId: string, newOwnerId: string): Promise<void> {
+    const { organizationId } = await getCurrentUserAuth();
+    const leadRef = doc(db, `organizations/${organizationId}/leads`, leadId);
+    await updateDoc(leadRef, { ownerId: newOwnerId });
+}
+
 
 // This is a placeholder for your actual dashboard data sources
 export const salesData = [];
@@ -735,3 +736,4 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
+

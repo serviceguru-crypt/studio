@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import * as React from 'react';
@@ -37,11 +38,12 @@ import { z } from "zod";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { Lead, User, addLead as addLeadData, getLeads as getLeadsFromDb, getCurrentUser, convertLeadToCustomer } from '@/lib/data';
+import { Lead, User, addLead as addLeadData, getLeads as getLeadsFromDb, getCurrentUser, convertLeadToCustomer, getUsersForOrganization, assignLead } from '@/lib/data';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
+import { Combobox } from '@/components/ui/combobox';
 
 const leadFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -192,11 +194,77 @@ function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onO
     )
 }
 
+function AssignLeadDialog({ open, onOpenChange, lead, salesReps, onLeadAssigned }: { open: boolean, onOpenChange: (open: boolean) => void, lead: Lead | null, salesReps: User[], onLeadAssigned: () => void }) {
+    const [selectedRep, setSelectedRep] = React.useState('');
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const { toast } = useToast();
+
+    React.useEffect(() => {
+        if (!open) {
+            setSelectedRep('');
+        }
+    }, [open]);
+
+    const handleAssign = async () => {
+        if (!lead || !selectedRep) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Please select a sales rep.' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await assignLead(lead.id, selectedRep);
+            toast({ title: 'Lead Assigned', description: `${lead.name} has been assigned.` });
+            onLeadAssigned();
+            onOpenChange(false);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not assign lead.' });
+        } finally {
+            setIsSubmitting(false);
+        }
+    }
+
+    const repOptions = salesReps.map(rep => ({ label: rep.name, value: rep.id }));
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Assign Lead: {lead?.name}</DialogTitle>
+                    <DialogDescription>
+                        Choose a sales representative to assign this lead to.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                    <Combobox 
+                        options={repOptions}
+                        value={selectedRep}
+                        onChange={setSelectedRep}
+                        placeholder="Select a Sales Rep..."
+                        searchPlaceholder="Search reps..."
+                        emptyText="No sales reps found."
+                    />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleAssign} disabled={isSubmitting || !selectedRep}>
+                        {isSubmitting ? 'Assigning...' : 'Assign Lead'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export default function LeadsPage() {
     const router = useRouter();
     const [isAddLeadOpen, setIsAddLeadOpen] = React.useState(false);
     const [leads, setLeads] = React.useState<Lead[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+    const [teamMembers, setTeamMembers] = React.useState<User[]>([]);
+    const [leadToAssign, setLeadToAssign] = React.useState<Lead | null>(null);
+    const [isAssignDialogOpen, setIsAssignDialogOpen] = React.useState(false);
     const { toast } = useToast();
 
     const fetchLeads = React.useCallback(async () => {
@@ -217,7 +285,13 @@ export default function LeadsPage() {
     }, [toast]);
 
     React.useEffect(() => {
+        const user = getCurrentUser(true);
+        setCurrentUser(user);
         fetchLeads();
+
+        if (user?.role === 'Admin') {
+            getUsersForOrganization().then(setTeamMembers);
+        }
     }, [fetchLeads]);
 
     const handleImport = () => {
@@ -234,7 +308,6 @@ export default function LeadsPage() {
                 title: "Lead Converted!",
                 description: `${lead.name} is now a customer. A new deal has been created.`,
             });
-            // Redirect to the new deal page to continue the sales process
             router.push(`/deals/${dealId}`);
         } catch (error: any) {
              toast({
@@ -244,6 +317,13 @@ export default function LeadsPage() {
             });
         }
     }
+    
+    const handleOpenAssignDialog = (lead: Lead) => {
+        setLeadToAssign(lead);
+        setIsAssignDialogOpen(true);
+    }
+
+    const salesReps = teamMembers.filter(member => member.role === 'Sales Rep');
 
   return (
     <DashboardLayout>
@@ -340,6 +420,11 @@ export default function LeadsPage() {
                                                 <DropdownMenuItem onClick={() => handleConvertLead(lead)}>
                                                     Convert to Customer
                                                 </DropdownMenuItem>
+                                                {currentUser?.role === 'Admin' && (
+                                                    <DropdownMenuItem onClick={() => handleOpenAssignDialog(lead)}>
+                                                        Assign Lead
+                                                    </DropdownMenuItem>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
@@ -359,6 +444,7 @@ export default function LeadsPage() {
         </main>
       </div>
       <AddLeadDialog open={isAddLeadOpen} onOpenChange={setIsAddLeadOpen} onLeadAdded={fetchLeads} />
+      <AssignLeadDialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen} lead={leadToAssign} salesReps={salesReps} onLeadAssigned={fetchLeads} />
     </DashboardLayout>
   );
 }
