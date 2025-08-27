@@ -20,7 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid } from 'date-fns';
 
 const activityFormSchema = z.object({
   type: z.enum(['Email', 'Call', 'Meeting', 'Note']),
@@ -69,10 +69,12 @@ export default function CustomerDetailsPage() {
                     return;
                 }
                 
-                // API response for activity dates might be strings
+                // Ensure all activity dates are proper Date objects
                 if (data.activity) {
                     data.activity.forEach(act => {
-                        if (typeof act.date === 'string') {
+                        if (act.date && typeof act.date.toDate === 'function') {
+                            act.date = act.date.toDate();
+                        } else if (typeof act.date === 'string') {
                             act.date = new Date(act.date);
                         }
                     });
@@ -250,7 +252,11 @@ export default function CustomerDetailsPage() {
                                 <CardContent>
                                     {customer.activity && customer.activity.length > 0 ? (
                                          <div className="space-y-6">
-                                            {customer.activity.sort((a,b) => b.date.getTime() - a.date.getTime()).map(item => (
+                                            {customer.activity.sort((a,b) => b.date.getTime() - a.date.getTime()).map(item => {
+                                                const activityDate = new Date(item.date);
+                                                const isActivityDateValid = isValid(activityDate);
+
+                                                return (
                                                 <div key={item.id} className="flex gap-4">
                                                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                                                         <ActivityIcon type={item.type} />
@@ -258,14 +264,16 @@ export default function CustomerDetailsPage() {
                                                     <div className="flex-1">
                                                         <div className="flex items-baseline justify-between">
                                                             <p className="font-semibold">{item.type}</p>
-                                                            <p className="text-xs text-muted-foreground" title={format(item.date, "PPpp")}>
-                                                                {formatDistanceToNow(item.date, { addSuffix: true })}
+                                                            {isActivityDateValid ? (
+                                                            <p className="text-xs text-muted-foreground" title={format(activityDate, "PPpp")}>
+                                                                {formatDistanceToNow(activityDate, { addSuffix: true })}
                                                             </p>
+                                                            ) : <p className="text-xs text-muted-foreground">Invalid date</p>}
                                                         </div>
                                                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.notes}</p>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            )})}
                                          </div>
                                     ) : (
                                         <p className="text-muted-foreground text-center py-4">No activity logged for this customer yet.</p>
