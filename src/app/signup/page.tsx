@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from '@/hooks/use-toast';
-import { signInWithGoogle } from '@/lib/data';
+import { signInWithGoogle, registerUser } from '@/lib/data';
 import { Separator } from '@/components/ui/separator';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (

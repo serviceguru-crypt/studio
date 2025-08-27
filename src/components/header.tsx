@@ -6,7 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import { Calendar as CalendarIcon, LogOut, Plus, Search, Users } from "lucide-react";
+import { Calendar as CalendarIcon, LogOut, Plus, Search, Users, Building } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { User, logoutUser } from "@/lib/data";
+import { User, logoutUser, getCurrentUser, getUsersForOrganization } from "@/lib/data";
 import { useRouter } from "next/navigation";
 
 interface HeaderProps {
@@ -40,37 +40,42 @@ export function Header({ date, onDateChange }: HeaderProps) {
   });
 
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+  const [loggedInUser, setLoggedInUser] = React.useState<User | null>(null);
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
 
   React.useEffect(() => {
-    const userJson = localStorage.getItem('currentUser');
-    if (userJson) {
-      try {
-        const user = JSON.parse(userJson);
-        setCurrentUser(user);
-        const allUsersJson = localStorage.getItem('users');
-         if (allUsersJson) {
-            const allUsersParsed = JSON.parse(allUsersJson);
-            const currentUserOrgId = user.organizationId;
-            setAllUsers(allUsersParsed.filter((u: User) => u.organizationId === currentUserOrgId));
-         }
-      } catch (e) {
-        console.error("Failed to parse user JSON", e);
-        // Handle corrupted data, e.g., by logging out
-        localStorage.removeItem('currentUser');
-        router.push('/login');
-      }
+    const user = getCurrentUser(); // This gets the "view as" user
+    setCurrentUser(user);
+
+    const lUser = getCurrentUser(true); // This gets the actual logged-in user
+    setLoggedInUser(lUser);
+
+    if (lUser) {
+        async function loadUsers() {
+            try {
+                const users = await getUsersForOrganization();
+                setAllUsers(users);
+            } catch(e) {
+                console.error("Failed to load users for organization", e);
+            }
+        }
+        loadUsers();
     }
-  }, [router]);
+  }, []);
 
   const handleUserChange = (userId: string) => {
-    const userToSwitchTo = allUsers.find(u => u.id === userId);
-    if (userToSwitchTo) {
-        localStorage.setItem('currentUser', JSON.stringify(userToSwitchTo));
-        setCurrentUser(userToSwitchTo);
-        // Force a reload to reflect the data changes for the new user
-        window.location.reload();
+    if (userId === 'org-view') {
+        localStorage.removeItem('viewAsUser');
+    } else {
+        const userToSwitchTo = allUsers.find(u => u.id === userId);
+        if (userToSwitchTo) {
+            localStorage.setItem('viewAsUser', JSON.stringify(userToSwitchTo));
+        }
     }
+    // Dispatch a custom event to notify other components of the user change
+    window.dispatchEvent(new CustomEvent('userChanged'));
+    // Also, reload to ensure all state is correctly reset and fetched.
+    window.location.reload();
   };
 
   const handleLogout = async () => {
@@ -147,7 +152,7 @@ export function Header({ date, onDateChange }: HeaderProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        {currentUser && <DropdownMenu>
+        {currentUser && loggedInUser && <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar className="h-10 w-10">
@@ -166,15 +171,19 @@ export function Header({ date, onDateChange }: HeaderProps) {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-               {allUsers.length > 1 && (
+               {loggedInUser.role === 'Admin' && allUsers.length > 1 && (
                   <>
                     <DropdownMenuRadioGroup value={currentUser.id} onValueChange={handleUserChange}>
-                        <DropdownMenuLabel>Switch User</DropdownMenuLabel>
+                        <DropdownMenuLabel>Switch View</DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        <DropdownMenuRadioItem value={'org-view'} className="flex items-center gap-2">
+                             <Building className="h-4 w-4" />
+                             <span>Organization View</span>
+                        </DropdownMenuRadioItem>
                         {allUsers.map(user => (
                         <DropdownMenuRadioItem key={user.id} value={user.id} className="flex items-center gap-2">
                             <Users className="h-4 w-4"/>
-                            <span>{user.name} ({user.role})</span>
+                            <span>{user.name}</span>
                         </DropdownMenuRadioItem>
                         ))}
                     </DropdownMenuRadioGroup>

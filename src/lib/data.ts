@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { initializeApp, getApps, getApp, deleteApp } from 'firebase/app';
@@ -122,7 +121,7 @@ const ensureAuthReady = (): Promise<FirebaseUser | null> => {
 // Helper to get current user's auth UID and organization ID
 async function getCurrentUserAuth() {
     await ensureAuthReady();
-    const user = getCurrentUser();
+    const user = getCurrentUser(); // This now respects the "view as" state
     if (!user) {
         throw new Error("Not authenticated. Please log in.");
     }
@@ -130,7 +129,17 @@ async function getCurrentUserAuth() {
     if (!organizationId) {
         throw new Error("Organization ID not found. Please log in again.");
     }
-    return { uid: user.id, organizationId, tier: user.tier };
+    
+    // Check if the user is an admin viewing the whole organization
+    const isAdminOrgView = user.role === 'Admin' && user.id === 'org-view';
+    
+    return { 
+        uid: user.id, 
+        organizationId, 
+        tier: user.tier,
+        // If it's an admin org view, we don't filter by a specific user ID
+        isOrgView: isAdminOrgView,
+    };
 }
 
 
@@ -170,8 +179,7 @@ export async function registerUser(data: { name: string, email: string, password
     
     await batch.commit();
 
-    localStorage.setItem('organizationId', organizationId);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
+    localStorage.setItem('loggedInUser', JSON.stringify(newUser));
 
     return newUser;
 };
@@ -199,7 +207,7 @@ export async function loginUser(email: string, password: string): Promise<User |
                 tier: orgProfile.tier
             };
             localStorage.setItem('organizationId', foundUser.organizationId);
-            localStorage.setItem('currentUser', JSON.stringify(foundUser));
+            localStorage.setItem('loggedInUser', JSON.stringify(foundUser));
             return foundUser;
         }
     }
@@ -227,7 +235,7 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
                 tier: orgProfile.tier,
             };
             localStorage.setItem('organizationId', existingUser.organizationId);
-localStorage.setItem('currentUser', JSON.stringify(existingUser));
+            localStorage.setItem('loggedInUser', JSON.stringify(existingUser));
             return { user: existingUser, isNewUser: false };
         }
     }
@@ -266,31 +274,64 @@ localStorage.setItem('currentUser', JSON.stringify(existingUser));
     await batch.commit();
 
     localStorage.setItem('organizationId', organizationId);
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
+    localStorage.setItem('loggedInUser', JSON.stringify(newUser));
 
     return { user: newUser, isNewUser: true };
 }
 
 
-export function getCurrentUser(): User | null {
+export function getCurrentUser(getLoggedInUser = false): User | null {
     if (typeof window === 'undefined') return null;
-    const userJson = localStorage.getItem('currentUser');
-    return userJson ? JSON.parse(userJson) : null;
+
+    const loggedInUserJson = localStorage.getItem('loggedInUser');
+    if (!loggedInUserJson) return null;
+    const loggedInUser = JSON.parse(loggedInUserJson);
+
+    if (getLoggedInUser) {
+        return loggedInUser;
+    }
+
+    const viewAsUserJson = localStorage.getItem('viewAsUser');
+    
+    if (loggedInUser.role === 'Admin' && viewAsUserJson) {
+        return JSON.parse(viewAsUserJson);
+    }
+    
+    if (loggedInUser.role === 'Admin' && !viewAsUserJson) {
+        // This is the "Organization View"
+        return {
+            ...loggedInUser,
+            id: 'org-view', // Special ID for org view
+            name: 'Organization View',
+            email: 'all@users.com'
+        }
+    }
+
+    return loggedInUser;
 }
 
 export async function updateCurrentUser(user: User): Promise<void> {
-    const { uid, organizationId } = await getCurrentUserAuth();
-    if (user.id !== uid) {
+    const { organizationId } = await getCurrentUserAuth();
+    const loggedInUser = getCurrentUser(true);
+    if (!loggedInUser || user.id !== loggedInUser.id) {
         throw new Error("Unauthorized: You can only update your own profile.");
     }
-    const docRef = doc(db, `organizations/${organizationId}/users`, uid);
+    const docRef = doc(db, `organizations/${organizationId}/users`, loggedInUser.id);
     await updateDoc(docRef, user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('loggedInUser', JSON.stringify(user));
+    
+    // If the user is viewing their own profile, update that as well
+    const viewAsUser = getCurrentUser();
+    if (viewAsUser && viewAsUser.id === user.id) {
+         localStorage.setItem('viewAsUser', JSON.stringify(user));
+    }
 }
 
 
 export async function getUsersForOrganization(): Promise<User[]> {
-    const { organizationId } = await getCurrentUserAuth();
+    const loggedInUser = getCurrentUser(true);
+    if (!loggedInUser) return [];
+    const organizationId = loggedInUser.organizationId;
     const usersCol = collection(db, `organizations/${organizationId}/users`);
     const snapshot = await getDocs(usersCol);
     return snapshot.docs.map(d => d.data() as User);
@@ -361,7 +402,8 @@ export async function sendPasswordReset(email: string): Promise<void> {
 
 export async function logoutUser() {
     await signOut(auth);
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem('loggedInUser');
+    localStorage.removeItem('viewAsUser');
     localStorage.removeItem('organizationId');
     authPromise = null;
 }
@@ -369,7 +411,9 @@ export async function logoutUser() {
 // --- COMPANY PROFILE FUNCTIONS ---
 
 export async function getCompanyProfile(): Promise<CompanyProfile | null> {
-    const { organizationId } = await getCurrentUserAuth();
+    const loggedInUser = getCurrentUser(true);
+     if (!loggedInUser) return null;
+    const organizationId = loggedInUser.organizationId;
     const docRef = doc(db, 'organizations', organizationId);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() as CompanyProfile : null;
@@ -384,9 +428,14 @@ export async function updateCompanyProfile(profile: Partial<CompanyProfile>): Pr
 // --- CUSTOMER FUNCTIONS ---
 
 export async function getCustomers(): Promise<Customer[]> {
-    const { organizationId } = await getCurrentUserAuth();
-    const customersCol = collection(db, `organizations/${organizationId}/customers`);
-    const snapshot = await getDocs(customersCol);
+    const { organizationId, uid, isOrgView } = await getCurrentUserAuth();
+    let customersQuery = query(collection(db, `organizations/${organizationId}/customers`));
+    
+    if (!isOrgView) {
+        customersQuery = query(customersQuery, where("ownerId", "==", uid));
+    }
+
+    const snapshot = await getDocs(customersQuery);
     return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
 
@@ -435,11 +484,15 @@ export async function deleteCustomer(id: string): Promise<void> {
 // --- DEAL FUNCTIONS ---
 
 export async function getDeals(): Promise<Deal[]> {
-    const { organizationId } = await getCurrentUserAuth();
-    const dealsCol = collection(db, `organizations/${organizationId}/deals`);
-    const snapshot = await getDocs(dealsCol);
+    const { organizationId, uid, isOrgView } = await getCurrentUserAuth();
+    let dealsQuery = query(collection(db, `organizations/${organizationId}/deals`));
+
+    if (!isOrgView) {
+        dealsQuery = query(dealsQuery, where("ownerId", "==", uid));
+    }
+
+    const snapshot = await getDocs(dealsQuery);
     
-    // Fetch related customers to populate company name
     const customerIds = [...new Set(snapshot.docs.map(d => d.data().customerId))].filter(Boolean);
     let customersById: Map<string, Customer> = new Map();
 
@@ -508,7 +561,6 @@ export async function updateAndRescoreDeal(dealId: string, oldData: Deal, newDat
     const { organizationId } = await getCurrentUserAuth();
     const dealRef = doc(db, `organizations/${organizationId}/deals`, dealId);
     
-    // Create activity logs for changes
     const activityLogs: string[] = [];
     if (newData.stage && newData.stage !== oldData.stage) {
         activityLogs.push(`Deal stage changed from ${oldData.stage} to ${newData.stage}.`);
@@ -519,7 +571,6 @@ export async function updateAndRescoreDeal(dealId: string, oldData: Deal, newDat
     
     const updatedDealData: Partial<Deal> = { ...newData };
 
-    // Re-score the lead if stage or value has changed
     const needsRescoring = newData.stage || newData.value;
     if (needsRescoring) {
         const customer = await getCustomerById(oldData.customerId);
@@ -539,7 +590,6 @@ export async function updateAndRescoreDeal(dealId: string, oldData: Deal, newDat
     const batch = writeBatch(db);
     batch.update(dealRef, updatedDealData);
 
-    // Add all activity logs
     activityLogs.forEach(log => {
         const activityRef = doc(collection(db, `organizations/${organizationId}/deals/${dealId}/activity`));
         batch.set(activityRef, {
@@ -556,7 +606,6 @@ export async function updateAndRescoreDeal(dealId: string, oldData: Deal, newDat
 export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id'>>): Promise<void> {
     const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, `organizations/${organizationId}/deals`, id);
-    // Firestore cannot store undefined, so we need to remove keys with undefined values
     Object.keys(updatedData).forEach(key => updatedData[key as keyof typeof updatedData] === undefined && delete updatedData[key as keyof typeof updatedData]);
     await updateDoc(docRef, updatedData);
 };
@@ -581,9 +630,14 @@ export async function addActivity(customerId: string, activityData: Omit<Activit
 // --- LEAD FUNCTIONS ---
 
 export async function getLeads(): Promise<Lead[]> {
-    const { organizationId } = await getCurrentUserAuth();
-    const leadsCol = collection(db, `organizations/${organizationId}/leads`);
-    const snapshot = await getDocs(leadsCol);
+    const { organizationId, uid, isOrgView } = await getCurrentUserAuth();
+    let leadsQuery = query(collection(db, `organizations/${organizationId}/leads`));
+
+    if (!isOrgView) {
+        leadsQuery = query(leadsQuery, where("ownerId", "==", uid));
+    }
+
+    const snapshot = await getDocs(leadsQuery);
     return snapshot.docs.map(d => ({
         id: d.id,
         ...d.data(),
@@ -594,7 +648,6 @@ export async function getLeads(): Promise<Lead[]> {
 export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status' | 'ownerId' | 'organizationId'>): Promise<Lead> {
     const { uid, organizationId, tier } = await getCurrentUserAuth();
 
-    // Enforce lead limit for Starter tier
     if (tier === 'Starter') {
         const now = new Date();
         const start = startOfMonth(now);
@@ -631,7 +684,6 @@ export async function convertLeadToCustomer(lead: Lead): Promise<{ customerId: s
     
     const batch = writeBatch(db);
 
-    // 1. Create a new Customer
     const customerRef = doc(collection(db, `organizations/${organizationId}/customers`));
     const newCustomerData = {
         name: lead.name,
@@ -639,30 +691,27 @@ export async function convertLeadToCustomer(lead: Lead): Promise<{ customerId: s
         phone: lead.phone,
         organization: lead.organization,
         status: 'Active',
-        avatar: '', // Default empty avatar
+        avatar: '', 
         ownerId: uid,
         organizationId,
     };
     batch.set(customerRef, newCustomerData);
 
-    // 2. Create a new Deal for that Customer
     const dealRef = doc(collection(db, `organizations/${organizationId}/deals`));
     const newDealData = {
         name: `Initial Deal for ${lead.organization}`,
         stage: 'Qualification',
-        value: 0, // Initial value, can be updated later
+        value: 0, 
         customerId: customerRef.id,
         ownerId: uid,
         organizationId,
-        closeDate: new Date(new Date().setDate(new Date().getDate() + 30)), // Set a default close date 30 days out
+        closeDate: new Date(new Date().setDate(new Date().getDate() + 30)),
     };
     batch.set(dealRef, newDealData);
     
-    // 3. Delete the Lead
     const leadRef = doc(db, `organizations/${organizationId}/leads`, lead.id);
     batch.delete(leadRef);
 
-    // 4. Commit all operations
     await batch.commit();
 
     return {
@@ -679,4 +728,3 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
-

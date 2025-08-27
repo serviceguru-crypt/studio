@@ -186,7 +186,7 @@ export default function TeamPage() {
 
 
     React.useEffect(() => {
-        const user = getCurrentUser();
+        const user = getCurrentUser(true); // Get the actual logged-in user
         setCurrentUser(user);
         
         if (user?.tier === 'Starter') {
@@ -200,7 +200,7 @@ export default function TeamPage() {
     }, [router, toast]);
 
     const fetchTeamMembers = React.useCallback(async () => {
-        const user = getCurrentUser();
+        const user = getCurrentUser(true);
         if (user?.tier === 'Starter') return;
         
         setIsLoading(true);

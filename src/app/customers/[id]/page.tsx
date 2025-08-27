@@ -59,7 +59,7 @@ export default function CustomerDetailsPage() {
     });
     
     useEffect(() => {
-        const user = getCurrentUser();
+        const user = getCurrentUser(true); // Get actual logged in user
         setCurrentUser(user);
     }, []);
 

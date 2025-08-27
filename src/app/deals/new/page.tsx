@@ -73,14 +73,8 @@ export default function NewDealPage() {
 
   async function onSubmit(data: DealFormValues) {
     try {
-      const currentUser = getCurrentUser();
-      if (!currentUser) {
-        throw new Error("User not authenticated. Please log in.");
-      }
       const newDeal = await addDeal({ 
         ...data,
-        ownerId: currentUser.id,
-        organizationId: currentUser.organizationId,
       });
       toast({
         title: "Deal Created",

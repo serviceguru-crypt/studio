@@ -53,19 +53,19 @@ export default function DealDetailsPage() {
     const [isAuthReady, setIsAuthReady] = useState(false);
 
     useEffect(() => {
-        const user = getCurrentUser();
+        const user = getCurrentUser(true); // Get the actual logged-in user
         if (user) {
             setCurrentUser(user);
             setIsAuthReady(true);
         } else {
-            const unsubscribe = onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    const storedUser = getCurrentUser();
+            const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+                if (firebaseUser) {
+                    const storedUser = getCurrentUser(true);
                     setCurrentUser(storedUser);
-                    setIsAuthReady(true);
                 } else {
                     router.push('/login');
                 }
+                setIsAuthReady(true);
                 unsubscribe();
             });
         }

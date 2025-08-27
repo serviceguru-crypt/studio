@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { addCustomer, getCurrentUser } from "@/lib/data";
+import { addCustomer } from "@/lib/data";
 
 const customerFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -39,11 +39,6 @@ export default function NewCustomerPage() {
 
   async function onSubmit(data: CustomerFormValues) {
     try {
-      const currentUser = getCurrentUser();
-      if (!currentUser) {
-          throw new Error("User not authenticated. Please log in.");
-      }
-      
       const newCustomer = await addCustomer({
         ...data,
       });

@@ -8,7 +8,7 @@ import { MetricCard } from '@/components/metric-card';
 import { LineChartCard } from '@/components/charts/line-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
 import { AiSummary } from '@/components/ai-summary';
-import { getDeals, getCustomers, getLeads, Deal, Customer, Lead } from '@/lib/data';
+import { getDeals, getCustomers, getLeads, Deal, Customer, Lead, getCurrentUser } from '@/lib/data';
 import { RecentSales } from '@/components/recent-sales';
 import { Users, DollarSign, Briefcase, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +39,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // This is a placeholder for proper auth handling
-    const loggedInUser = localStorage.getItem('currentUser');
+    const loggedInUser = getCurrentUser(true); // Get the actual logged-in user
     if (!loggedInUser) {
       router.replace('/login');
     }
@@ -66,8 +66,13 @@ export default function DashboardPage() {
     // Re-fetch data when the component mounts and when the window gains focus
     window.addEventListener('focus', fetchData);
     
+    // Add a custom event listener to refetch data when the user context changes
+    const handleUserChange = () => fetchData();
+    window.addEventListener('userChanged', handleUserChange);
+    
     return () => {
       window.removeEventListener('focus', fetchData);
+      window.removeEventListener('userChanged', handleUserChange);
     };
   }, [fetchData]);
   
@@ -112,7 +117,7 @@ export default function DashboardPage() {
           name: customer?.name || 'Unknown Customer',
           email: customer?.email || '',
           amount: deal.value,
-          avatar: customer?.avatar || `https://avatar.vercel.sh/${customer?.email}.png`,
+          avatar: customer?.avatar || "",
         }
       });
       

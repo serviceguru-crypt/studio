@@ -37,7 +37,7 @@ import { Header } from '@/components/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Customer, getCustomers, deleteCustomer as deleteCustomerFromDb, User } from '@/lib/data';
+import { Customer, getCustomers, deleteCustomer as deleteCustomerFromDb, User, getCurrentUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
@@ -57,11 +57,8 @@ export default function CustomersPage() {
 
   React.useEffect(() => {
     // This is a placeholder for auth context.
-    const userJson = localStorage.getItem('currentUser');
-    if (userJson) {
-      const user = JSON.parse(userJson);
-      setCurrentUser(user);
-    }
+    const user = getCurrentUser(true);
+    setCurrentUser(user);
   }, []);
 
   const fetchCustomers = React.useCallback(async () => {
