@@ -4,7 +4,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch, Timestamp } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, User as FirebaseUser } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, User as FirebaseUser, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { z } from 'zod';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
 import { startOfMonth, endOfMonth } from 'date-fns';
@@ -227,7 +227,7 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
                 tier: orgProfile.tier,
             };
             localStorage.setItem('organizationId', existingUser.organizationId);
-            localStorage.setItem('currentUser', JSON.stringify(existingUser));
+localStorage.setItem('currentUser', JSON.stringify(existingUser));
             return { user: existingUser, isNewUser: false };
         }
     }
@@ -278,6 +278,17 @@ export function getCurrentUser(): User | null {
     return userJson ? JSON.parse(userJson) : null;
 }
 
+export async function updateCurrentUser(user: User): Promise<void> {
+    const { uid, organizationId } = await getCurrentUserAuth();
+    if (user.id !== uid) {
+        throw new Error("Unauthorized: You can only update your own profile.");
+    }
+    const docRef = doc(db, `organizations/${organizationId}/users`, uid);
+    await updateDoc(docRef, user);
+    localStorage.setItem('currentUser', JSON.stringify(user));
+}
+
+
 export async function getUsersForOrganization(): Promise<User[]> {
     const { organizationId } = await getCurrentUserAuth();
     const usersCol = collection(db, `organizations/${organizationId}/users`);
@@ -288,43 +299,56 @@ export async function getUsersForOrganization(): Promise<User[]> {
 export async function inviteUser(data: { name: string, email: string, role: Role, password: string }): Promise<User> {
     const { organizationId, tier } = await getCurrentUserAuth();
 
-    // Create a temporary auth instance to create the new user, to avoid signing out the current admin
     const tempApp = initializeApp(firebaseConfig, `temp-app-${Date.now()}`);
     const tempAuth = getAuth(tempApp);
 
     try {
-        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-        const newUserAuth = userCredential.user;
+        const signInMethods = await fetchSignInMethodsForEmail(tempAuth, data.email);
+
+        let userId: string;
+        if (signInMethods.length === 0) {
+            // New user, create them in auth
+            const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+            userId = userCredential.user.uid;
+        } else {
+            // User already exists, but we need a UID. This is a limitation.
+            // For this app, we cannot get the UID of another user client-side.
+            // We'll throw an error that is more specific.
+            throw new Error("This user already exists. To add an existing user, they must not be part of another organization.");
+        }
+        
+        // This is a simplified approach. A more robust system would use a backend function to lookup the UID.
+        // For now, if we can create the user, we get their UID and proceed.
+
+        const userDocInOrgRef = doc(db, `organizations/${organizationId}/users`, userId);
+        const userDocInOrgSnap = await getDoc(userDocInOrgRef);
+
+        if (userDocInOrgSnap.exists()) {
+            throw new Error("This user is already a member of this organization.");
+        }
 
         const newUser: User = {
-            id: newUserAuth.uid,
+            id: userId,
             name: data.name,
             email: data.email,
             role: data.role,
-            avatar: '', // Let user upload their own avatar
+            avatar: '',
             organizationId: organizationId,
             tier: tier,
         };
 
-        const userDocRef = doc(db, `organizations/${organizationId}/users`, newUserAuth.uid);
-        await setDoc(userDocRef, newUser);
+        await setDoc(userDocInOrgRef, newUser);
         
         return newUser;
 
-    } catch (error) {
-        // Handle specific auth errors, e.g., email already in use
+    } catch (error: any) {
         console.error("Error inviting user:", error);
-        if (error instanceof Error && 'code' in error) {
-            const authError = error as { code: string, message: string };
-            if (authError.code === 'auth/email-already-in-use') {
-                throw new Error("This email address is already in use by another account.");
-            }
+        if (error.code === 'auth/email-already-in-use') {
+             throw new Error("This email is already associated with an account. Please ask them to sign in, or use a different email.");
         }
-        throw new Error("An unexpected error occurred while inviting the user.");
+        throw error;
     } finally {
         await signOut(tempAuth);
-        // Deleting the temporary app instance is not directly available in the client SDK, 
-        // but it will be garbage collected. The important part is signing out.
     }
 }
 
@@ -374,14 +398,14 @@ export async function getCustomers(): Promise<Customer[]> {
     return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
 
-export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity' | 'organizationId' | 'ownerId' | 'avatar'>): Promise<Customer> {
+export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity' | 'organizationId' | 'ownerId' | 'status' | 'avatar'>): Promise<Customer> {
     const { uid, organizationId } = await getCurrentUserAuth();
     const customersCol = collection(db, `organizations/${organizationId}/customers`);
     const docRef = await addDoc(customersCol, {
         ...customerData,
         ownerId: uid,
         organizationId,
-        avatar: '', // Let user upload avatar
+        avatar: "", // Default empty avatar
         status: "Active"
     });
     const newCustomer = await getDoc(docRef);
@@ -663,3 +687,5 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
+
+    
