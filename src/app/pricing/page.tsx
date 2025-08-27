@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { Check, Star } from 'lucide-react';
@@ -9,7 +8,8 @@ import { cn } from '@/lib/utils';
 import { registerUser, Tier } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
+import { createPaymentLink } from '@/lib/payment';
 
 const tiers = [
   {
@@ -65,8 +65,10 @@ function PricingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState<Tier | null>(null);
 
-    const handleSelectTier = async (tier: Tier) => {
+    const handleSelectTier = async (tier: Tier, price: string) => {
+        setIsLoading(tier);
         const name = searchParams.get('name');
         const email = searchParams.get('email');
         const password = searchParams.get('password');
@@ -82,19 +84,44 @@ function PricingContent() {
             return;
         }
 
-        try {
-            await registerUser({ name, email, password, organizationName, tier });
-            toast({
-                title: 'Account Created!',
-                description: "Welcome to your new CRM. Let's get your profile set up.",
-            });
-            router.push('/profile');
-        } catch (error: any) {
-            toast({
-                variant: 'destructive',
-                title: 'Registration Failed',
-                description: error.message || 'An unexpected error occurred.',
-            });
+        const signupData = { name, email, password, organizationName, tier };
+
+        if (tier === 'Starter') {
+            try {
+                await registerUser(signupData);
+                toast({
+                    title: 'Account Created!',
+                    description: "Welcome to your new CRM. Let's get your profile set up.",
+                });
+                router.push('/profile');
+            } catch (error: any) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Registration Failed',
+                    description: error.message || 'An unexpected error occurred.',
+                });
+            } finally {
+                setIsLoading(null);
+            }
+        } else {
+            // Handle paid tiers
+            try {
+                const numericPrice = parseInt(price.replace(/[^0-9]/g, ''), 10);
+                const paymentLink = await createPaymentLink(signupData, numericPrice, tier);
+                
+                if (paymentLink) {
+                    router.push(paymentLink);
+                } else {
+                     throw new Error('Could not generate payment link.');
+                }
+            } catch (error: any) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Payment Error',
+                    description: error.message || 'Could not initiate payment. Please try again.',
+                });
+                setIsLoading(null);
+            }
         }
     };
 
@@ -144,9 +171,10 @@ function PricingContent() {
                                 <Button
                                     className="w-full"
                                     variant={tier.isPopular ? 'default' : 'outline'}
-                                    onClick={() => handleSelectTier(tier.tier)}
+                                    onClick={() => handleSelectTier(tier.tier, tier.price)}
+                                    disabled={!!isLoading}
                                 >
-                                    {tier.cta}
+                                    {isLoading === tier.tier ? 'Processing...' : tier.cta}
                                 </Button>
                             </CardFooter>
                         </Card>
