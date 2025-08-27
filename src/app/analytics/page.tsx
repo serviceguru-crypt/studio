@@ -10,7 +10,7 @@ import { MetricCard } from '@/components/metric-card';
 import { LineChartCard } from '@/components/charts/line-chart-card';
 import { BarChartCard } from '@/components/charts/bar-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
-import { salesData, revenueData, leadsData, recentSales, teamPerformance, getDeals, Deal } from '@/lib/data';
+import { salesData, revenueData, leadsData, recentSales, teamPerformance, getDeals, Deal, getLeads, Lead } from '@/lib/data';
 import { Users, DollarSign, Briefcase, TrendingUp, TrendingDown, CircleHelp, File } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -41,6 +41,7 @@ const getBadgeVariant = (stage: string) => {
 }
 export default function AnalyticsPage() {
     const [allDeals, setAllDeals] = React.useState<Deal[]>([]);
+    const [leads, setLeads] = React.useState<Lead[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
     const [filteredDeals, setFilteredDeals] = React.useState<Deal[]>([]);
     const [salesChartData, setSalesChartData] = React.useState<{ name: string; sales: number }[]>([]);
@@ -50,13 +51,14 @@ export default function AnalyticsPage() {
     });
 
     React.useEffect(() => {
-        async function loadDeals() {
+        async function loadData() {
             setIsLoading(true);
-            const deals = await getDeals();
+            const [deals, leadData] = await Promise.all([getDeals(), getLeads()]);
             setAllDeals(deals.map(d => ({...d, closeDate: new Date(d.closeDate)})));
+            setLeads(leadData);
             setIsLoading(false);
         }
-        loadDeals();
+        loadData();
     }, []);
 
     React.useEffect(() => {
@@ -125,7 +127,7 @@ export default function AnalyticsPage() {
         exportToCsv('analytics_deals.csv', dataToExport);
     }
 
-    const totalLeads = metrics.leadsData.reduce((acc, item) => acc + item.count, 0);
+    const totalLeads = leads.length;
     const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won');
     const lostDeals = filteredDeals.filter(d => d.stage === 'Closed Lost');
     const winRate = (wonDeals.length > 0 || lostDeals.length > 0) ? (wonDeals.length / (wonDeals.length + lostDeals.length)) * 100 : 0;
@@ -219,7 +221,7 @@ export default function AnalyticsPage() {
                                     <p className="text-sm text-muted-foreground">Leads that fit criteria</p>
                                 </div>
                             </div>
-                            <p className="text-xl font-bold">{filteredDeals.filter(d => d.stage === 'Qualification').length}</p>
+                            <p className="text-xl font-bold">{allDeals.filter(d => d.stage === 'Qualification').length}</p>
                         </div>
                          <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                             <div className="flex items-center gap-3">
@@ -229,7 +231,7 @@ export default function AnalyticsPage() {
                                     <p className="text-sm text-muted-foreground">Deals in proposal stage</p>
                                 </div>
                             </div>
-                            <p className="text-xl font-bold">{filteredDeals.filter(d => d.stage === 'Proposal').length}</p>
+                            <p className="text-xl font-bold">{allDeals.filter(d => d.stage === 'Proposal').length}</p>
                         </div>
                          <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                             <div className="flex items-center gap-3">
@@ -239,7 +241,7 @@ export default function AnalyticsPage() {
                                     <p className="text-sm text-muted-foreground">Successful deals</p>
                                 </div>
                             </div>
-                            <p className="text-xl font-bold">{wonDeals.length}</p>
+                            <p className="text-xl font-bold">{allDeals.filter(d => d.stage === 'Closed Won').length}</p>
                         </div>
                     </CardContent>
                 </Card>
