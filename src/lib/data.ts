@@ -2,7 +2,7 @@
 
 "use client";
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
+import { initializeApp, getApps, getApp, deleteApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch, Timestamp } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, User as FirebaseUser, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { z } from 'zod';
@@ -299,33 +299,29 @@ export async function getUsersForOrganization(): Promise<User[]> {
 export async function inviteUser(data: { name: string, email: string, role: Role, password: string }): Promise<User> {
     const { organizationId, tier } = await getCurrentUserAuth();
 
-    const tempApp = initializeApp(firebaseConfig, `temp-app-${Date.now()}`);
+    // Use a temporary, uniquely named app instance for this operation
+    // This is crucial to avoid conflicts with the main app's auth state
+    const tempAppName = `temp-invite-app-${Date.now()}`;
+    const tempApp = initializeApp(firebaseConfig, tempAppName);
     const tempAuth = getAuth(tempApp);
 
     try {
-        const signInMethods = await fetchSignInMethodsForEmail(tempAuth, data.email);
-
-        let userId: string;
-        if (signInMethods.length === 0) {
-            // New user, create them in auth
-            const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
-            userId = userCredential.user.uid;
-        } else {
-            // User already exists, but we need a UID. This is a limitation.
-            // For this app, we cannot get the UID of another user client-side.
-            // We'll throw an error that is more specific.
-            throw new Error("This user already exists. To add an existing user, they must not be part of another organization.");
+        // First, check if the user is already part of ANY organization's user list in Firestore.
+        // This is a more robust check than just checking Firebase Auth.
+        const orgsSnapshot = await getDocs(collection(db, "organizations"));
+        for (const orgDoc of orgsSnapshot.docs) {
+            const usersSnapshot = await getDocs(collection(db, `organizations/${orgDoc.id}/users`));
+            for (const userDoc of usersSnapshot.docs) {
+                if (userDoc.data().email === data.email) {
+                    throw new Error("This email is already registered to a user in an organization.");
+                }
+            }
         }
         
-        // This is a simplified approach. A more robust system would use a backend function to lookup the UID.
-        // For now, if we can create the user, we get their UID and proceed.
-
-        const userDocInOrgRef = doc(db, `organizations/${organizationId}/users`, userId);
-        const userDocInOrgSnap = await getDoc(userDocInOrgRef);
-
-        if (userDocInOrgSnap.exists()) {
-            throw new Error("This user is already a member of this organization.");
-        }
+        // If the loop completes, the email is not in our Firestore user records.
+        // Now, we can safely attempt to create the user in Firebase Auth.
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+        const userId = userCredential.user.uid;
 
         const newUser: User = {
             id: userId,
@@ -337,6 +333,7 @@ export async function inviteUser(data: { name: string, email: string, role: Role
             tier: tier,
         };
 
+        const userDocInOrgRef = doc(db, `organizations/${organizationId}/users`, userId);
         await setDoc(userDocInOrgRef, newUser);
         
         return newUser;
@@ -344,11 +341,13 @@ export async function inviteUser(data: { name: string, email: string, role: Role
     } catch (error: any) {
         console.error("Error inviting user:", error);
         if (error.code === 'auth/email-already-in-use') {
-             throw new Error("This email is already associated with an account. Please ask them to sign in, or use a different email.");
+             throw new Error("This email address is already in use by another account.");
         }
+        // Re-throw other errors
         throw error;
     } finally {
-        await signOut(tempAuth);
+        // IMPORTANT: Clean up the temporary app instance
+        await deleteApp(tempApp);
     }
 }
 
@@ -356,9 +355,9 @@ export async function deleteUser(userId: string): Promise<void> {
     const { organizationId } = await getCurrentUserAuth();
     const userDocRef = doc(db, `organizations/${organizationId}/users`, userId);
     
-    // Note: This does not delete the user from Firebase Auth.
-    // This is often desired so they can be re-invited.
-    // For a permanent deletion, you'd need an admin SDK in a backend environment.
+    // This only deletes the user's record from the organization's collection in Firestore.
+    // It does NOT delete the user from Firebase Authentication. This is a deliberate design
+    // choice. A full user deletion would require admin privileges and a backend function.
     await deleteDoc(userDocRef);
 }
 
@@ -687,5 +686,3 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
-
-    
