@@ -16,22 +16,33 @@ export default function LoginPage() {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = loginUser(email, password);
-    if (user) {
-      toast({
-        title: "Login Successful",
-        description: `Welcome back, ${user.name}!`,
-      });
-      router.push('/dashboard');
-    } else {
-      toast({
+    setIsLoading(true);
+    try {
+      const user = await loginUser(email, password);
+      if (user) {
+        // Storing user in localStorage for prototype purposes.
+        // In a real app, you'd use a session/token-based system.
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${user.name}!`,
+        });
+        router.push('/dashboard');
+      } else {
+        throw new Error("Invalid credentials");
+      }
+    } catch (error: any) {
+       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        description: error.message || "Invalid email or password. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,6 +67,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -68,10 +80,11 @@ export default function LoginPage() {
                   required 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Login
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login"}
               </Button>
             </div>
           </form>

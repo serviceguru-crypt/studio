@@ -18,10 +18,12 @@ export default function SignupPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [organizationName, setOrganizationName] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleSignup = () => {
+    const handleSignup = async () => {
+        setIsLoading(true);
         try {
-            const newUser = registerUser({
+            await registerUser({
                 name,
                 email,
                 password,
@@ -38,6 +40,8 @@ export default function SignupPage() {
                 title: "Signup Failed",
                 description: error.message,
             });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -55,11 +59,11 @@ export default function SignupPage() {
             <div className="grid gap-4">
             <div className="grid gap-2">
                 <Label htmlFor="full-name">Full Name</Label>
-                <Input id="full-name" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
+                <Input id="full-name" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading} />
             </div>
              <div className="grid gap-2">
                 <Label htmlFor="organization-name">Organization Name</Label>
-                <Input id="organization-name" placeholder="Acme Inc." required value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} />
+                <Input id="organization-name" placeholder="Acme Inc." required value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} disabled={isLoading} />
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
@@ -69,14 +73,15 @@ export default function SignupPage() {
                 placeholder="m@example.com"
                 required
                 value={email} onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
                 />
             </div>
             <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)}/>
+                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading}/>
             </div>
-            <Button type="submit" className="w-full" onClick={handleSignup}>
-                Create an account
+            <Button type="submit" className="w-full" onClick={handleSignup} disabled={isLoading}>
+                {isLoading ? "Creating Account..." : "Create an account"}
             </Button>
             </div>
             <div className="mt-4 text-center text-sm">

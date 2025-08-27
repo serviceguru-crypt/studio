@@ -41,10 +41,10 @@ export default function NewCustomerPage() {
     try {
       const currentUser = getCurrentUser();
       if (!currentUser) {
-          throw new Error("User not authenticated");
+          throw new Error("User not authenticated. Please log in.");
       }
       
-      const newCustomer = addCustomer({
+      const newCustomer = await addCustomer({
         ...data,
         ownerId: currentUser.id,
         organizationId: currentUser.organizationId
@@ -56,12 +56,12 @@ export default function NewCustomerPage() {
       });
       router.push(`/customers/${newCustomer.id}`);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not create the customer. Please try again.",
+        description: error.message || "Could not create the customer. Please try again.",
       });
     }
   }

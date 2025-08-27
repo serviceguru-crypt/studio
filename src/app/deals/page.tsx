@@ -89,6 +89,7 @@ export default function DealsPage() {
   const { toast } = useToast();
 
    React.useEffect(() => {
+    // This is a placeholder for auth context.
     const userJson = localStorage.getItem('currentUser');
     if (userJson) {
       const user = JSON.parse(userJson);
@@ -96,17 +97,17 @@ export default function DealsPage() {
     }
   }, []);
 
-  const fetchDeals = React.useCallback(() => {
+  const fetchDeals = React.useCallback(async () => {
     setIsLoading(true);
     try {
-        let dealsFromApi: DealWithScore[] = getDealsFromDb();
+        let dealsFromApi: DealWithScore[] = await getDealsFromDb();
         
         dealsFromApi = dealsFromApi.map(deal => ({
             ...deal,
             closeDate: new Date(deal.closeDate) 
         }));
 
-        const customers: Customer[] = getCustomers();
+        const customers: Customer[] = await getCustomers();
         const customersById = new Map(customers.map(c => [c.id, c]));
 
         const dealsWithOrganization = dealsFromApi.map(deal => ({
@@ -122,12 +123,12 @@ export default function DealsPage() {
           scoreDealAndUpdateState(deal);
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not fetch deals.",
+            description: error.message || "Could not fetch deals.",
         });
     } finally {
         setIsLoading(false);
@@ -144,7 +145,7 @@ export default function DealsPage() {
             stage: dealToScore.stage,
         });
 
-        updateDeal(dealToScore.id, { leadScore: result.leadScore, justification: result.justification });
+        await updateDeal(dealToScore.id, { leadScore: result.leadScore, justification: result.justification });
         
         setAllDeals(prevDeals => 
             prevDeals.map(d => 
@@ -200,21 +201,21 @@ export default function DealsPage() {
     exportToCsv('deals.csv', dataToExport);
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (dealToDelete) {
         try {
-            deleteDealFromDb(dealToDelete);
+            await deleteDealFromDb(dealToDelete);
             toast({
                 title: "Deal Deleted",
                 description: "The deal has been successfully deleted.",
             });
             fetchDeals(); // Re-fetch deals to update the list
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Could not delete the deal. Please try again.",
+                description: error.message || "Could not delete the deal. Please try again.",
             });
         } finally {
             setDealToDelete(null);

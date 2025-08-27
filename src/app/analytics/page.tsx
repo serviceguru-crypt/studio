@@ -50,10 +50,13 @@ export default function AnalyticsPage() {
     });
 
     React.useEffect(() => {
-        setIsLoading(true);
-        const deals = getDeals();
-        setAllDeals(deals);
-        setIsLoading(false);
+        async function loadDeals() {
+            setIsLoading(true);
+            const deals = await getDeals();
+            setAllDeals(deals.map(d => ({...d, closeDate: new Date(d.closeDate)})));
+            setIsLoading(false);
+        }
+        loadDeals();
     }, []);
 
     React.useEffect(() => {

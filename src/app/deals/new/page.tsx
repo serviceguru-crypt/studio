@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Customer, getCustomers, addDeal } from "@/lib/data";
+import { Customer, getCustomers, addDeal, getCurrentUser } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, ChevronsUpDown, Check } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
@@ -47,16 +47,19 @@ export default function NewDealPage() {
   const [isLoadingCustomers, setIsLoadingCustomers] = React.useState(true);
   
   React.useEffect(() => {
-    try {
-        setIsLoadingCustomers(true);
-        const data = getCustomers();
-        setCustomers(data);
-    } catch (error) {
-        console.error(error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch customers.' });
-    } finally {
-        setIsLoadingCustomers(false);
+    async function loadCustomers() {
+        try {
+            setIsLoadingCustomers(true);
+            const data = await getCustomers();
+            setCustomers(data);
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: error.message || 'Could not fetch customers.' });
+        } finally {
+            setIsLoadingCustomers(false);
+        }
     }
+    loadCustomers();
   }, [toast]);
 
   const form = useForm<DealFormValues>({
@@ -70,18 +73,26 @@ export default function NewDealPage() {
 
   async function onSubmit(data: DealFormValues) {
     try {
-      const newDeal = addDeal(data);
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        throw new Error("User not authenticated. Please log in.");
+      }
+      const newDeal = await addDeal({ 
+        ...data,
+        ownerId: currentUser.id,
+        organizationId: currentUser.organizationId,
+      });
       toast({
         title: "Deal Created",
         description: "The new deal has been added successfully.",
       });
       router.push(`/deals/${newDeal.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Could not create the deal. Please try again.",
+        description: error.message || "Could not create the deal. Please try again.",
       });
     }
   }

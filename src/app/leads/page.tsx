@@ -29,7 +29,7 @@ import { z } from "zod";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { Lead, User, addLead as addLeadToDb, getLeads as getLeadsFromDb, getCurrentUser } from '@/lib/data';
+import { Lead, User, addLead as addLeadData, getLeads as getLeadsFromDb, getCurrentUser } from '@/lib/data';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,15 +59,13 @@ function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onO
         try {
             const currentUser = getCurrentUser();
             if (!currentUser) {
-                throw new Error("User not found");
+                throw new Error("User not authenticated. Please log in.");
             }
-            
-            addLeadToDb({
+            await addLeadData({
                 ...data,
                 ownerId: currentUser.id,
-                organizationId: currentUser.organizationId,
+                organizationId: currentUser.organizationId
             });
-            
             toast({
                 title: "Lead Added",
                 description: `${data.name} has been successfully added as a new lead.`,
@@ -75,12 +73,12 @@ function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onO
             onOpenChange(false);
             form.reset();
             onLeadAdded(); // Callback to refresh the leads list
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Could not create the lead. Please try again.",
+                description: error.message || "Could not create the lead. Please try again.",
             });
         }
     }
@@ -167,17 +165,17 @@ export default function LeadsPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const { toast } = useToast();
 
-    const fetchLeads = React.useCallback(() => {
+    const fetchLeads = React.useCallback(async () => {
         setIsLoading(true);
         try {
-            const data = getLeadsFromDb();
+            const data = await getLeadsFromDb();
             setLeads(data);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast({
                 variant: 'destructive',
                 title: 'Error',
-                description: 'Could not fetch leads.'
+                description: error.message || 'Could not fetch leads.'
             });
         } finally {
             setIsLoading(false);

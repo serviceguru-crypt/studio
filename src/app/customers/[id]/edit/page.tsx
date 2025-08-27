@@ -44,10 +44,10 @@ export default function EditCustomerPage() {
     }
   });
 
-  const fetchCustomer = useCallback(() => {
+  const fetchCustomer = useCallback(async () => {
     if (id) {
         try {
-            const customer = getCustomerById(id as string);
+            const customer = await getCustomerById(id as string);
             if (!customer) {
               throw new Error('Customer not found');
             }
@@ -55,12 +55,12 @@ export default function EditCustomerPage() {
               ...customer,
               phone: customer.phone || "", // Ensure phone is not undefined
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Could not fetch customer details."
+                description: error.message || "Could not fetch customer details."
             });
             router.push('/customers');
         }
@@ -73,19 +73,19 @@ export default function EditCustomerPage() {
 
   async function onSubmit(data: CustomerFormValues) {
     try {
-        updateCustomer(id as string, data);
+        await updateCustomer(id as string, data);
         toast({
             title: "Customer Updated",
             description: "The customer has been updated successfully.",
         });
         router.push(`/customers/${id}`);
         router.refresh(); // Refresh to show updated data if the user navigates back
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not update the customer. Please try again.",
+            description: error.message || "Could not update the customer. Please try again.",
         });
     }
   }

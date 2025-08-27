@@ -8,7 +8,7 @@ import { MetricCard } from '@/components/metric-card';
 import { LineChartCard } from '@/components/charts/line-chart-card';
 import { PieChartCard } from '@/components/charts/pie-chart-card';
 import { AiSummary } from '@/components/ai-summary';
-import { getDeals, getCustomers, leadsSourceData, recentSales, Deal, Customer } from '@/lib/data';
+import { getDeals, getCustomers, leadsSourceData, Deal, Customer } from '@/lib/data';
 import { RecentSales } from '@/components/recent-sales';
 import { Users, DollarSign, Briefcase, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,23 +27,25 @@ export default function DashboardPage() {
   });
 
   useEffect(() => {
+    // This is a placeholder for proper auth handling
     const loggedInUser = localStorage.getItem('currentUser');
     if (!loggedInUser) {
       router.replace('/login');
     }
   }, [router]);
 
-  const fetchData = useCallback(() => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const deals = getDeals();
-    const custs = getCustomers();
-    setAllDeals(deals);
+    const deals = await getDeals();
+    const custs = await getCustomers();
+    setAllDeals(deals.map(d => ({ ...d, closeDate: new Date(d.closeDate) })));
     setCustomers(custs);
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
     fetchData();
+    // This is a simple way to refetch on window focus, you might want a more robust solution
     window.addEventListener('focus', fetchData);
     return () => {
       window.removeEventListener('focus', fetchData);
@@ -105,7 +107,7 @@ export default function DashboardPage() {
     };
   }, [isLoading, filteredDeals, customers]);
   
-  if (!metrics) {
+  if (isLoading || !metrics) {
     return (
       <DashboardLayout>
         <div className="flex flex-col w-full">

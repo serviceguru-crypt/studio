@@ -8,9 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { getCompanyProfile, updateCompanyProfile, CompanyProfile } from '@/lib/data';
+import { getCompanyProfile, updateCompanyProfile, CompanyProfile, getCurrentUser } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Briefcase } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -18,24 +19,43 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [name, setName] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const currentProfile = getCompanyProfile();
-    if (currentProfile) {
-      setProfile(currentProfile);
-      setName(currentProfile.name);
-      setLogo(currentProfile.logo);
-    } else {
-        // This could happen if a user navigates here without signing up
-        // or if local storage is cleared.
+    async function loadProfile() {
+      const user = getCurrentUser();
+      if (!user) {
         toast({
-            variant: "destructive",
-            title: "No Profile Found",
-            description: "Please log in or sign up to create a profile.",
+          variant: "destructive",
+          title: "Not Authenticated",
+          description: "Please log in to view your profile.",
         });
         router.push('/login');
+        return;
+      }
+      
+      try {
+        const currentProfile = await getCompanyProfile();
+        if (currentProfile) {
+          setProfile(currentProfile);
+          setName(currentProfile.name);
+          setLogo(currentProfile.logo);
+        } else {
+          // This might be a new organization, which is a valid state
+          // We can pre-fill from user registration info if needed, but for now, we'll let them enter it.
+        }
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message || "Could not load company profile.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
+    loadProfile();
   }, [router, toast]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,24 +69,55 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (profile) {
-      const updatedProfile = {
+      const updatedProfile: CompanyProfile = {
           ...profile,
           name: name,
           logo: logo || profile.logo
       };
-      updateCompanyProfile(updatedProfile);
-      toast({
-        title: "Profile Saved",
-        description: "Your company profile has been updated.",
-      });
-      router.push('/dashboard');
+      try {
+        await updateCompanyProfile(updatedProfile);
+        toast({
+          title: "Profile Saved",
+          description: "Your company profile has been updated.",
+        });
+        router.push('/dashboard');
+      } catch(error: any) {
+        toast({
+          variant: "destructive",
+          title: "Save Failed",
+          description: error.message || "Could not save profile.",
+        });
+      }
     }
   };
   
-  if (!profile) {
-      return <div>Loading...</div>
+  if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+               <Skeleton className="h-8 w-48 mx-auto" />
+               <Skeleton className="h-4 w-64 mx-auto mt-2" />
+            </CardHeader>
+            <CardContent className="grid gap-6">
+               <div className="flex flex-col items-center gap-4">
+                  <Skeleton className="h-24 w-24 rounded-full" />
+                  <Skeleton className="h-10 w-28" />
+                </div>
+                 <div className="grid gap-2">
+                   <Skeleton className="h-4 w-24" />
+                   <Skeleton className="h-10 w-full" />
+                 </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-36" />
+            </CardFooter>
+          </Card>
+        </div>
+      )
   }
 
   return (

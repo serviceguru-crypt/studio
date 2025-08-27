@@ -56,6 +56,7 @@ export default function CustomersPage() {
   const { toast } = useToast();
 
   React.useEffect(() => {
+    // This is a placeholder for auth context.
     const userJson = localStorage.getItem('currentUser');
     if (userJson) {
       const user = JSON.parse(userJson);
@@ -63,17 +64,17 @@ export default function CustomersPage() {
     }
   }, []);
 
-  const fetchCustomers = React.useCallback(() => {
+  const fetchCustomers = React.useCallback(async () => {
     setIsLoading(true);
     try {
-        const customers = getCustomers();
+        const customers = await getCustomers();
         setAllCustomers(customers);
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not fetch customers.",
+            description: error.message || "Could not fetch customers.",
         });
     } finally {
         setIsLoading(false);
@@ -122,21 +123,21 @@ export default function CustomersPage() {
     exportToCsv('customers.csv', dataToExport);
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (customerToDelete) {
         try {
-            deleteCustomerFromDb(customerToDelete);
+            await deleteCustomerFromDb(customerToDelete);
             toast({
                 title: "Customer Deleted",
                 description: "The customer has been successfully deleted.",
             });
             fetchCustomers(); // Re-fetch to update the list
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
             toast({
                 variant: "destructive",
                 title: "Error",
-                description: "Could not delete the customer. Please try again.",
+                description: error.message || "Could not delete the customer. Please try again.",
             });
         } finally {
             setCustomerToDelete(null);

@@ -35,10 +35,10 @@ export default function DealDetailsPage() {
     const [deal, setDeal] = useState<Deal | null>(null);
     const [customer, setCustomer] = useState<Customer | null>(null);
 
-    const fetchDealDetails = useCallback(() => {
+    const fetchDealDetails = useCallback(async () => {
         if (id) {
             try {
-                const foundDeal = getDealById(id as string);
+                const foundDeal = await getDealById(id as string);
                 if (!foundDeal) {
                     throw new Error('Failed to fetch deal');
                 }
@@ -48,15 +48,15 @@ export default function DealDetailsPage() {
                 }
                 setDeal(foundDeal);
 
-                const foundCustomer = getCustomerById(foundDeal.customerId);
+                const foundCustomer = await getCustomerById(foundDeal.customerId);
                 if (!foundCustomer) {
                     throw new Error('Failed to fetch customer for the deal');
                 }
                 setCustomer(foundCustomer);
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error(error);
-                toast({ variant: "destructive", title: "Error", description: "Could not fetch deal details." });
+                toast({ variant: "destructive", title: "Error", description: error.message || "Could not fetch deal details." });
                 router.push('/deals');
             }
         }

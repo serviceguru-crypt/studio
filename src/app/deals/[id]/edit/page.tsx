@@ -47,11 +47,12 @@ export default function EditDealPage() {
     }
   });
 
-  const fetchDealAndCustomers = useCallback(() => {
+  const fetchDealAndCustomers = useCallback(async () => {
     if (id) {
         try {
-            setCustomers(getCustomers());
-            const deal = getDealById(id as string);
+            const custs = await getCustomers();
+            setCustomers(custs);
+            const deal = await getDealById(id as string);
             if (!deal) {
               throw new Error('Deal not found');
             }
@@ -61,9 +62,9 @@ export default function EditDealPage() {
               value: deal.value || 0,
               closeDate: deal.closeDate ? new Date(deal.closeDate) : new Date(),
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast({ variant: "destructive", title: "Error", description: "Could not fetch deal details." });
+            toast({ variant: "destructive", title: "Error", description: error.message || "Could not fetch deal details." });
             router.push('/deals');
         }
     }
@@ -76,16 +77,16 @@ export default function EditDealPage() {
   async function onSubmit(data: DealFormValues) {
     if (id) {
         try {
-            updateDeal(id as string, data);
+            await updateDeal(id as string, data);
             toast({
                 title: "Deal Updated",
                 description: "The deal has been updated successfully.",
             });
             router.push(`/deals/${id}`);
             router.refresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast({ variant: "destructive", title: "Error", description: "Could not update the deal." });
+            toast({ variant: "destructive", title: "Error", description: error.message || "Could not update the deal." });
         }
     }
   }

@@ -1,6 +1,11 @@
+// This file will contain all the functions to interact with the Firebase Firestore database.
+// We will replace the localStorage logic with actual Firebase SDK calls.
 
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
-import { addDays } from 'date-fns';
+// --- TYPE DEFINITIONS ---
 
 export type Role = 'Admin' | 'Sales Rep';
 
@@ -8,7 +13,6 @@ export type User = {
     id: string;
     name: string;
     email: string;
-    password?: string; // Should be hashed in a real app
     role: Role;
     avatar: string;
     organizationId: string;
@@ -52,6 +56,7 @@ export type Activity = {
     type: 'Email' | 'Call' | 'Meeting' | 'Note';
     notes: string;
 }
+
 export type Customer = {
     id: string;
     name: string;
@@ -65,20 +70,28 @@ export type Customer = {
     organizationId: string;
 }
 
-const today = new Date();
+// --- FIREBASE INITIALIZATION ---
 
-export const initialUsers: User[] = [
-    { id: 'U001', name: 'Admin User', email: 'admin@n-crm.com', password: 'password', role: 'Admin', avatar: 'https://placehold.co/40x40.png', organizationId: 'O001' },
-    { id: 'U002', name: 'Sales Rep Sally', email: 'sally@n-crm.com', password: 'password', role: 'Sales Rep', avatar: 'https://placehold.co/40x40.png', organizationId: 'O001' },
-];
+// Your web app's Firebase configuration will be stored in environment variables
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
 
-export const initialCompanyProfiles: CompanyProfile[] = [
-    { id: 'O001', name: 'N-CRM Inc.', logo: '' },
-];
+// Initialize Firebase
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
 
-export const initialCustomersData: Customer[] = [];
-export const dealsData: Deal[] = [];
+// --- MOCK DATA (For UI development without real data) ---
+// These will be removed as we implement the Firestore functions.
+export const salesData: any[] = [];
+export const revenueData: any[] = [];
 export const leadsSourceData: { name: string; count: number; fill: string }[] = [
     { name: 'Social Media', count: 25, fill: 'var(--color-chart-1)' },
     { name: 'Website', count: 35, fill: 'var(--color-chart-2)' },
@@ -87,273 +100,125 @@ export const leadsSourceData: { name: string; count: number; fill: string }[] = 
     { name: 'Email', count: 5, fill: 'var(--color-chart-5)' },
 ];
 export const recentSales: any[] = [];
+export const teamPerformance: any[] = [];
 
-export const teamPerformance = [
-    { name: 'Alice', deals: 12, value: 150000 },
-    { name: 'Bob', deals: 8, value: 95000 },
-    { name: 'Charlie', deals: 15, value: 210000 },
-    { name: 'Diana', deals: 10, value: 130000 },
-    { name: 'Eve', deals: 5, value: 60000 },
-];
 
-const initializeData = <T>(key: string, initialData: T[]): T[] => {
-    if (typeof window === 'undefined') {
-        return initialData;
-    }
-    try {
-        const storedData = localStorage.getItem(key);
-        if (storedData) {
-            const parsedData = JSON.parse(storedData, (key, value) => {
-                if ((key === 'closeDate' || key === 'date' || key === 'createdAt') && typeof value === 'string') {
-                    return new Date(value);
-                }
-                return value;
-            });
-            if (Array.isArray(parsedData)) {
-                return parsedData;
-            }
-        }
-        localStorage.setItem(key, JSON.stringify(initialData));
-        return initialData;
-    } catch (error) {
-        console.error(`Error with local storage for key "${key}":`, error);
-        return initialData;
-    }
-}
+// --- AUTH FUNCTIONS ---
 
-// Initialize data sources
-let users = initializeData('users', initialUsers);
-let companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
-
-export const registerUser = (data: {name: string, email: string, password: string, organizationName: string }) => {
-    users = initializeData('users', initialUsers);
-    companyProfiles = initializeData('companyProfiles', initialCompanyProfiles);
-
-    if (users.find(u => u.email === data.email)) {
-        throw new Error('An account with this email already exists.');
-    }
-
-    const newOrgId = `O${Date.now()}`;
-    const newCompanyProfile: CompanyProfile = {
-        id: newOrgId,
-        name: data.organizationName,
-        logo: '',
-    };
-    companyProfiles.push(newCompanyProfile);
-    localStorage.setItem('companyProfiles', JSON.stringify(companyProfiles));
-    
-    const newUser: User = {
-        id: `U${Date.now()}`,
-        name: data.name,
-        email: data.email,
-        password: data.password, // In a real app, hash this!
-        role: 'Admin', // First user is always an admin
-        avatar: `https://placehold.co/40x40.png?text=${data.name.charAt(0)}`,
-        organizationId: newOrgId,
-    };
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
-
-    return newUser;
+export async function registerUser(data: {name: string, email: string, password: string, organizationName: string }): Promise<User> {
+    // TODO: Implement Firebase Auth user creation and Firestore document creation.
+    console.log("registerUser called with:", data);
+    // This is a placeholder.
+    return Promise.reject("Function not implemented.");
 };
 
-export const loginUser = (email: string, password: string): User | null => {
-    const allUsers = initializeData('users', initialUsers);
-    const user = allUsers.find(u => u.email === email && u.password === password);
-    if (user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        return user;
-    }
-    return null;
+export async function loginUser(email: string, password: string): Promise<User | null> {
+    // TODO: Implement Firebase Auth sign-in.
+    console.log("loginUser called with:", email);
+    // This is a placeholder.
+    return Promise.reject("Function not implemented.");
 };
 
-export const getCurrentUser = (): User | null => {
-    if (typeof window === 'undefined') {
-        // This is a server-side context, try a different approach if needed
-        // For this prototype, we return null as client-side auth is used.
-        return null;
-    }
-    const userJson = localStorage.getItem('currentUser');
-    if (!userJson) return null;
-    try {
-        return JSON.parse(userJson);
-    } catch (e) {
-        return null;
-    }
-}
-
-export const getCompanyProfile = (): CompanyProfile | null => {
-    const user = getCurrentUser();
-    if (!user) return null;
-    const allProfiles = initializeData('companyProfiles', initialCompanyProfiles);
-    return allProfiles.find(p => p.id === user.organizationId) || null;
-}
-
-export const updateCompanyProfile = (profile: CompanyProfile) => {
-    const allProfiles = initializeData('companyProfiles', initialCompanyProfiles);
-    const index = allProfiles.findIndex(p => p.id === profile.id);
-    if (index > -1) {
-        allProfiles[index] = profile;
-        localStorage.setItem('companyProfiles', JSON.stringify(allProfiles));
-    }
-}
-
-// Customer Functions
-export const getCustomers = (): Customer[] => {
-    const allCustomers = initializeData('customers', initialCustomersData);
-    const currentUser = getCurrentUser();
-    if (!currentUser) return [];
-
-    const orgCustomers = allCustomers.filter(c => c.organizationId === currentUser.organizationId);
-
-    if (currentUser.role === 'Admin') {
-        return orgCustomers;
-    }
-    return orgCustomers.filter(c => c.ownerId === currentUser.id);
-};
-
-export const addCustomer = (customerData: { name: string; email: string; organization: string; phone?: string; ownerId: string; organizationId: string; }) => {
-    const allCustomers = initializeData('customers', initialCustomersData);
-    const newCustomer: Customer = {
-        id: `C${Date.now()}`,
-        name: customerData.name,
-        email: customerData.email,
-        organization: customerData.organization,
-        phone: customerData.phone || undefined,
-        status: 'Active',
-        avatar: `https://placehold.co/40x40.png?text=${customerData.name.charAt(0)}`,
-        activity: [],
-        ownerId: customerData.ownerId,
-        organizationId: customerData.organizationId,
-    };
-    allCustomers.push(newCustomer);
-    localStorage.setItem('customers', JSON.stringify(allCustomers));
-    return newCustomer;
-};
-
-export const getCustomerById = (id: string): Customer | undefined => {
-    const allCustomers = initializeData('customers', initialCustomersData);
-    return allCustomers.find(customer => customer.id === id);
-}
-
-export const updateCustomer = (id: string, updatedData: Partial<Omit<Customer, 'id' | 'avatar'>>) => {
-    const allCustomers = initializeData('customers', initialCustomersData);
-    const customerIndex = allCustomers.findIndex(customer => customer.id === id);
-    if (customerIndex > -1) {
-        allCustomers[customerIndex] = { ...allCustomers[customerIndex], ...updatedData };
-        localStorage.setItem('customers', JSON.stringify(allCustomers));
-        return allCustomers[customerIndex];
-    }
-    return null;
-};
-
-export const deleteCustomer = (id: string) => {
-    let allCustomers = initializeData('customers', initialCustomersData);
-    allCustomers = allCustomers.filter(customer => customer.id !== id);
-    localStorage.setItem('customers', JSON.stringify(allCustomers));
-};
-
-// Deal Functions
-export const getDeals = (): Deal[] => {
-    const allDeals = initializeData('deals', dealsData);
-    const currentUser = getCurrentUser();
-    if (!currentUser) return [];
-    
-    const orgDeals = allDeals.filter(d => d.organizationId === currentUser.organizationId);
-
-    if (currentUser.role === 'Admin') {
-        return orgDeals;
-    }
-    return orgDeals.filter(d => d.ownerId === currentUser.id);
-};
-
-export const addDeal = (deal: Omit<Deal, 'id' | 'ownerId' | 'organizationId'>) => {
-    const allDeals = initializeData('deals', dealsData);
-    const currentUser = getCurrentUser();
-     if (!currentUser) throw new Error("No logged in user");
-    const newDeal: Deal = {
-        ...deal,
-        id: `D${Date.now()}`,
-        ownerId: currentUser.id,
-        organizationId: currentUser.organizationId,
-    };
-    allDeals.push(newDeal);
-    localStorage.setItem('deals', JSON.stringify(allDeals));
-    return newDeal;
-};
-
-export const getDealById = (id: string): Deal | undefined => {
-    const allDeals = initializeData('deals', dealsData);
-    return allDeals.find(deal => deal.id === id);
-}
-
-export const updateDeal = (id: string, updatedData: Partial<Omit<Deal, 'id'>>) => {
-    const allDeals = initializeData('deals', dealsData);
-    const dealIndex = allDeals.findIndex(deal => deal.id === id);
-    if (dealIndex > -1) {
-        allDeals[dealIndex] = { ...allDeals[dealIndex], ...updatedData };
-        localStorage.setItem('deals', JSON.stringify(allDeals));
-        return allDeals[dealIndex];
-    }
-    return null;
-};
-
-export const deleteDeal = (id: string) => {
-    let allDeals = initializeData('deals', dealsData);
-    allDeals = allDeals.filter(deal => deal.id !== id);
-    localStorage.setItem('deals', JSON.stringify(allDeals));
-};
-
-// Activity Functions
-export const addActivity = (customerId: string, activity: Omit<Activity, 'id' | 'date'>) => {
-    const allCustomers = initializeData('customers', initialCustomersData);
-    const customerIndex = allCustomers.findIndex(c => c.id === customerId);
-    if (customerIndex > -1) {
-        const newActivity: Activity = {
-            ...activity,
-            id: `A${Date.now()}`,
-            date: new Date(),
-        };
-        if (!allCustomers[customerIndex].activity) {
-            allCustomers[customerIndex].activity = [];
-        }
-        allCustomers[customerIndex].activity.push(newActivity);
-        localStorage.setItem('customers', JSON.stringify(allCustomers));
-        return allCustomers[customerIndex];
-    }
+export function getCurrentUser(): User | null {
+    // This will be replaced with Firebase Auth's onAuthStateChanged listener in the UI.
     return null;
 }
 
-// Lead Functions
-export const getLeads = (): Lead[] => {
-    const allLeads = initializeData('leads', []);
-    const currentUser = getCurrentUser();
-    if (!currentUser) return [];
+// --- COMPANY PROFILE FUNCTIONS ---
 
-    const orgLeads = allLeads.filter(l => l.organizationId === currentUser.organizationId);
-
-    if (currentUser.role === 'Admin') {
-        return orgLeads;
-    }
-    return orgLeads.filter(l => l.ownerId === currentUser.id);
+export async function getCompanyProfile(): Promise<CompanyProfile | null> {
+    // TODO: Implement Firestore document fetch.
+    return Promise.reject("Function not implemented.");
 }
 
-export const addLead = (leadData: { name: string; email: string; organization: string; phone?: string; ownerId: string, organizationId: string }) => {
-    const allLeads = initializeData('leads', []);
+export async function updateCompanyProfile(profile: CompanyProfile): Promise<void> {
+    // TODO: Implement Firestore document update.
+    console.log("updateCompanyProfile called with:", profile);
+    return Promise.reject("Function not implemented.");
+}
 
-    const newLead: Lead = {
-        id: `L${Date.now()}`,
-        name: leadData.name,
-        email: leadData.email,
-        organization: leadData.organization,
-        phone: leadData.phone || undefined,
-        createdAt: new Date(),
-        status: 'New',
-        ownerId: leadData.ownerId,
-        organizationId: leadData.organizationId,
-    };
-    allLeads.push(newLead);
-    localStorage.setItem('leads', JSON.stringify(allLeads));
-    return newLead;
+// --- CUSTOMER FUNCTIONS ---
+
+export async function getCustomers(): Promise<Customer[]> {
+    // TODO: Implement Firestore collection fetch.
+    console.log("getCustomers called");
+    return [];
+};
+
+export async function addCustomer(customerData: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity'>): Promise<Customer> {
+    // TODO: Implement Firestore document creation.
+    console.log("addCustomer called with:", customerData);
+    return Promise.reject("Function not implemented.");
+};
+
+export async function getCustomerById(id: string): Promise<Customer | undefined> {
+    // TODO: Implement Firestore document fetch.
+    console.log("getCustomerById called with:", id);
+    return Promise.reject("Function not implemented.");
+}
+
+export async function updateCustomer(id: string, updatedData: Partial<Omit<Customer, 'id' | 'avatar'>>): Promise<Customer | null> {
+    // TODO: Implement Firestore document update.
+    console.log("updateCustomer called with:", id, updatedData);
+    return Promise.reject("Function not implemented.");
+};
+
+export async function deleteCustomer(id: string): Promise<void> {
+    // TODO: Implement Firestore document deletion.
+    console.log("deleteCustomer called with:", id);
+    return Promise.reject("Function not implemented.");
+};
+
+// --- DEAL FUNCTIONS ---
+
+export async function getDeals(): Promise<Deal[]> {
+    // TODO: Implement Firestore collection fetch.
+    console.log("getDeals called");
+    return [];
+};
+
+export async function addDeal(deal: Omit<Deal, 'id'>): Promise<Deal> {
+    // TODO: Implement Firestore document creation.
+    console.log("addDeal called with:", deal);
+    return Promise.reject("Function not implemented.");
+};
+
+export async function getDealById(id: string): Promise<Deal | undefined> {
+    // TODO: Implement Firestore document fetch.
+    console.log("getDealById called with:", id);
+    return Promise.reject("Function not implemented.");
+}
+
+export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id'>>): Promise<Deal | null> {
+    // TODO: Implement Firestore document update.
+    console.log("updateDeal called with:", id, updatedData);
+    return Promise.reject("Function not implemented.");
+};
+
+export async function deleteDeal(id: string): Promise<void> {
+    // TODO: Implement Firestore document deletion.
+    console.log("deleteDeal called with:", id);
+    return Promise.reject("Function not implemented.");
+};
+
+// --- ACTIVITY FUNCTIONS ---
+
+export async function addActivity(customerId: string, activity: Omit<Activity, 'id' | 'date'>): Promise<Customer | null> {
+    // TODO: Implement Firestore sub-collection document creation.
+    console.log("addActivity called with:", customerId, activity);
+    return Promise.reject("Function not implemented.");
+}
+
+// --- LEAD FUNCTIONS ---
+
+export async function getLeads(): Promise<Lead[]> {
+    // TODO: Implement Firestore collection fetch.
+    console.log("getLeads called");
+    return [];
+}
+
+export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status'>): Promise<Lead> {
+    // TODO: Implement Firestore document creation.
+    console.log("addLead called with:", leadData);
+    return Promise.reject("Function not implemented.");
 }

@@ -55,10 +55,10 @@ export default function CustomerDetailsPage() {
         },
     });
 
-    const fetchCustomer = useCallback(() => {
+    const fetchCustomer = useCallback(async () => {
         if (id) {
             try {
-                const data = getCustomerById(id as string);
+                const data = await getCustomerById(id as string);
                 if (!data) {
                     toast({
                         variant: "destructive",
@@ -81,12 +81,12 @@ export default function CustomerDetailsPage() {
                 }
                 
                 setCustomer(data);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to fetch customer:", error);
                 toast({
                     variant: "destructive",
                     title: "Error",
-                    description: "Could not fetch customer details.",
+                    description: error.message || "Could not fetch customer details.",
                 });
                 router.push('/customers');
             }
@@ -97,9 +97,9 @@ export default function CustomerDetailsPage() {
         fetchCustomer();
     }, [fetchCustomer]);
 
-    const onSubmitActivity = (data: ActivityFormValues) => {
+    const onSubmitActivity = async (data: ActivityFormValues) => {
         if(id) {
-            addActivity(id as string, data);
+            await addActivity(id as string, data);
             toast({
                 title: "Activity Logged",
                 description: "The new activity has been added to the customer's record.",

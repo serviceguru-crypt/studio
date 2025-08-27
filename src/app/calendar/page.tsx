@@ -28,9 +28,12 @@ export default function CalendarPage() {
     const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
 
     React.useEffect(() => {
-        const allDeals = getDeals();
-        // Filter out deals that might not have a closeDate
-        setDeals(allDeals.filter(deal => !!deal.closeDate));
+        async function loadDeals() {
+            const allDeals = await getDeals();
+            // Filter out deals that might not have a closeDate
+            setDeals(allDeals.filter(deal => !!deal.closeDate).map(d => ({...d, closeDate: new Date(d.closeDate)})));
+        }
+        loadDeals();
     }, []);
     
     const dealsForSelectedDate = selectedDate 
