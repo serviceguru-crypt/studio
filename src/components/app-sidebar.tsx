@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useEffect, useState } from 'react';
-import { getCompanyProfile } from '@/lib/data';
+import { getCompanyProfile, getCurrentUser } from '@/lib/data';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -32,12 +32,20 @@ export function AppSidebar() {
   const [companyLogo, setCompanyLogo] = useState('');
 
   useEffect(() => {
-    const profile = getCompanyProfile();
-    if(profile) {
-        setCompanyName(profile.name);
-        setCompanyLogo(profile.logo);
+    async function loadProfile() {
+        const user = getCurrentUser();
+        // Only fetch profile if a user is actually logged in.
+        // This prevents auth errors on page load.
+        if (user) { 
+            const profile = await getCompanyProfile();
+            if(profile) {
+                setCompanyName(profile.name);
+                setCompanyLogo(profile.logo);
+            }
+        }
     }
-  }, []);
+    loadProfile();
+  }, [pathname]); // Re-run on navigation to update if needed
 
   return (
     <Sidebar>
