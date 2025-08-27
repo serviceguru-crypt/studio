@@ -2,8 +2,10 @@
 "use client";
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { z } from 'zod';
+
 
 // --- TYPE DEFINITIONS ---
 
@@ -19,7 +21,7 @@ export type User = {
 }
 
 export type CompanyProfile = {
-    id: string;
+    id: string; // This will be the organizationId
     name: string;
     logo: string;
 }
@@ -32,23 +34,25 @@ export type Lead = {
     phone?: string;
     createdAt: Date;
     status: 'New' | 'Contacted' | 'Qualified' | 'Disqualified';
-    ownerId: string;
+    ownerId: string; // The user who created the lead
     organizationId: string;
 }
 
-export type Deal = {
-    id: string;
-    name:string;
-    stage: 'Qualification' | 'Proposal' | 'Negotiation' | 'Closed Won' | 'Closed Lost';
-    value: number;
-    customerId: string;
-    ownerId: string;
-    closeDate: Date;
-    leadScore?: 'Hot' | 'Warm' | 'Cold';
-    justification?: string;
-    organizationId: string;
-    company?: string;
-}
+export const DealSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    stage: z.enum(['Qualification', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost']),
+    value: z.number(),
+    customerId: z.string(),
+    ownerId: z.string(),
+    closeDate: z.date(),
+    leadScore: z.enum(['Hot', 'Warm', 'Cold']).optional(),
+    justification: z.string().optional(),
+    organizationId: z.string(),
+    company: z.string().optional(),
+});
+export type Deal = z.infer<typeof DealSchema>;
+
 
 export type Activity = {
     id: string;
@@ -57,18 +61,20 @@ export type Activity = {
     notes: string;
 }
 
-export type Customer = {
-    id: string;
-    name: string;
-    email: string;
-    phone?: string;
-    organization: string;
-    status: 'Active' | 'Inactive';
-    avatar: string;
-    activity: Activity[];
-    ownerId: string;
-    organizationId: string;
-}
+export const CustomerSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    phone: z.string().optional(),
+    organization: z.string(),
+    status: z.enum(['Active', 'Inactive']),
+    avatar: z.string(),
+    activity: z.array(z.any()).optional(), // Activity is a subcollection, so we won't store it here directly
+    ownerId: z.string(),
+    organizationId: z.string(),
+})
+export type Customer = z.infer<typeof CustomerSchema>;
+
 
 // --- FIREBASE INITIALIZATION ---
 
@@ -86,106 +92,101 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// --- MOCK DATA ---
-export const leadsSourceData: { name: string; count: number; fill: string }[] = [
-    { name: 'Social Media', count: 25, fill: 'var(--color-chart-1)' },
-    { name: 'Website', count: 35, fill: 'var(--color-chart-2)' },
-    { name: 'Referral', count: 15, fill: 'var(--color-chart-3)' },
-    { name: 'Advertisement', count: 20, fill: 'var(--color-chart-4)' },
-    { name: 'Email', count: 5, fill: 'var(--color-chart-5)' },
-];
 
+// --- UTILITY FUNCTIONS ---
 
-let customers: Customer[] = [];
-let deals: Deal[] = [];
-let leads: Lead[] = [];
-let users: User[] = [];
-let companyProfile: CompanyProfile | null = null;
-let initialized = false;
-
-const initializeData = () => {
-    if (typeof window !== 'undefined' && !initialized) {
-        customers = JSON.parse(localStorage.getItem('customers') || '[]').map((c: any) => ({ ...c, activity: c.activity ? c.activity.map((a: any) => ({...a, date: new Date(a.date)})) : [] }));
-        deals = JSON.parse(localStorage.getItem('deals') || '[]').map((d: any) => ({...d, closeDate: new Date(d.closeDate)}));
-        leads = JSON.parse(localStorage.getItem('leads') || '[]').map((l: any) => ({...l, createdAt: new Date(l.createdAt)}));
-        users = JSON.parse(localStorage.getItem('users') || '[]');
-        companyProfile = JSON.parse(localStorage.getItem('companyProfile') || 'null');
-        initialized = true;
-
-        if (users.length === 0) {
-             const adminUser = {
-                id: 'user-1',
-                name: 'Admin User',
-                email: 'admin@example.com',
-                password: 'password123',
-                role: 'Admin',
-                avatar: `https://i.pravatar.cc/150?u=user-1`,
-                organizationId: 'org-1'
-            };
-            const salesUser = {
-                id: 'user-2',
-                name: 'Sales Rep',
-                email: 'sales@example.com',
-                password: 'password123',
-                role: 'Sales Rep',
-                avatar: `https://i.pravatar.cc/150?u=user-2`,
-                organizationId: 'org-1'
-            };
-            users.push(adminUser, salesUser);
-            localStorage.setItem('users', JSON.stringify(users));
-        }
+// Helper to get current user's auth UID and organization ID
+function getCurrentUserAuth() {
+    const user = auth.currentUser;
+    if (!user) {
+        throw new Error("Not authenticated. Please log in.");
     }
-};
-
-
-initializeData();
+    const organizationId = localStorage.getItem('organizationId');
+    if (!organizationId) {
+        throw new Error("Organization ID not found. Please log in again.");
+    }
+    return { uid: user.uid, organizationId };
+}
 
 
 // --- AUTH FUNCTIONS ---
 
-export async function registerUser(data: {name: string, email: string, password: string, organizationName: string }): Promise<User> {
-    initializeData();
-    const existingUser = users.find(u => u.email === data.email);
-    if(existingUser) {
-        throw new Error("An account with this email already exists.");
-    }
+export async function registerUser(data: { name: string, email: string, password: string, organizationName: string }): Promise<User> {
+    const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+    const user = userCredential.user;
+
     const organizationId = `org-${Date.now()}`;
+
     const newUser: User = {
-        id: `user-${Date.now()}`,
+        id: user.uid,
         name: data.name,
         email: data.email,
         role: 'Admin',
         avatar: `https://i.pravatar.cc/150?u=${data.email}`,
         organizationId: organizationId,
     };
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
-    localStorage.setItem('currentUser', JSON.stringify(newUser));
 
     const newCompanyProfile: CompanyProfile = {
         id: organizationId,
         name: data.organizationName,
         logo: '',
     };
-    companyProfile = newCompanyProfile;
-    localStorage.setItem('companyProfile', JSON.stringify(newCompanyProfile));
     
-    // This is a simulation, so we'll store the password in a separate, insecure way.
-    // In a real app, Firebase Auth handles this securely.
-    localStorage.setItem(`password_${data.email}`, data.password);
+    // Use a batch to write all initial data atomically
+    const batch = writeBatch(db);
+    
+    const orgDocRef = doc(db, "organizations", organizationId);
+    batch.set(orgDocRef, newCompanyProfile);
+
+    const userDocRef = doc(db, `organizations/${organizationId}/users`, user.uid);
+    batch.set(userDocRef, newUser);
+    
+    await batch.commit();
+
+    localStorage.setItem('organizationId', organizationId);
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
 
     return newUser;
 };
 
 export async function loginUser(email: string, password: string): Promise<User | null> {
-    initializeData();
-    const user = users.find(u => u.email === email);
-    const storedPassword = localStorage.getItem(`password_${email}`);
-    if (user && storedPassword === password) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        return user;
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // After login, we need to find which organization this user belongs to.
+    const usersCollectionRef = collection(db, "users_flat"); // A flat collection for faster lookups
+    const q = query(usersCollectionRef, where("email", "==", email));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+       // This part is a fallback, creating a flat collection of users for easier lookup
+       // In a real scenario, you might have a different way to associate users to orgs on login
+        const orgsSnapshot = await getDocs(collection(db, "organizations"));
+        let foundUser: User | null = null;
+        for (const orgDoc of orgsSnapshot.docs) {
+            const userDocRef = doc(db, `organizations/${orgDoc.id}/users`, user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                foundUser = userDoc.data() as User;
+                await setDoc(doc(db, "users_flat", user.uid), { email: foundUser.email, organizationId: foundUser.organizationId });
+                localStorage.setItem('organizationId', foundUser.organizationId);
+                localStorage.setItem('currentUser', JSON.stringify(foundUser));
+                return foundUser;
+            }
+        }
+        throw new Error("User record not found in any organization.");
     }
-    return null;
+
+    const userData = querySnapshot.docs[0].data();
+    const userDocRef = doc(db, `organizations/${userData.organizationId}/users`, user.uid);
+    const userDoc = await getDoc(userDocRef);
+    if (!userDoc.exists()) {
+         throw new Error("User record not found in their organization.");
+    }
+    const fullUser = userDoc.data() as User;
+    localStorage.setItem('organizationId', fullUser.organizationId);
+    localStorage.setItem('currentUser', JSON.stringify(fullUser));
+    return fullUser;
 };
 
 export function getCurrentUser(): User | null {
@@ -194,156 +195,201 @@ export function getCurrentUser(): User | null {
     return userJson ? JSON.parse(userJson) : null;
 }
 
-// --- COMPANY PROFILE FUNCTIONS ---
-
-export function getCompanyProfile(): CompanyProfile | null {
-    initializeData();
-    return companyProfile;
+export async function logoutUser() {
+    await signOut(auth);
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('organizationId');
 }
 
-export async function updateCompanyProfile(profile: CompanyProfile): Promise<void> {
-    companyProfile = profile;
-    localStorage.setItem('companyProfile', JSON.stringify(profile));
-    return Promise.resolve();
+// --- COMPANY PROFILE FUNCTIONS ---
+
+export async function getCompanyProfile(): Promise<CompanyProfile | null> {
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, 'organizations', organizationId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? docSnap.data() as CompanyProfile : null;
+}
+
+export async function updateCompanyProfile(profile: Partial<CompanyProfile>): Promise<void> {
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, 'organizations', organizationId);
+    await updateDoc(docRef, profile);
 }
 
 // --- CUSTOMER FUNCTIONS ---
 
 export async function getCustomers(): Promise<Customer[]> {
-    initializeData();
-    const currentUser = getCurrentUser();
-    if (!currentUser) return [];
-    return customers.filter(c => c.organizationId === currentUser.organizationId);
+    const { organizationId } = getCurrentUserAuth();
+    const customersCol = collection(db, `organizations/${organizationId}/customers`);
+    const snapshot = await getDocs(customersCol);
+    return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
 
-export async function addCustomer(customerData: Omit<Customer, 'id' | 'status' | 'avatar' | 'activity'>): Promise<Customer> {
-    initializeData();
-    const newCustomer: Customer = {
+export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity'>): Promise<Customer> {
+    const { uid, organizationId } = getCurrentUserAuth();
+    const customersCol = collection(db, `organizations/${organizationId}/customers`);
+    const docRef = await addDoc(customersCol, {
         ...customerData,
-        id: `cust-${Date.now()}`,
-        status: 'Active',
-        avatar: `https://i.pravatar.cc/150?u=${customerData.email}`,
-        activity: []
-    };
-    customers.push(newCustomer);
-    localStorage.setItem('customers', JSON.stringify(customers));
-    return newCustomer;
+        ownerId: uid,
+        organizationId,
+    });
+    const newCustomer = await getDoc(docRef);
+    return CustomerSchema.parse({ id: newCustomer.id, ...newCustomer.data() });
 };
 
 export async function getCustomerById(id: string): Promise<Customer | undefined> {
-    initializeData();
-    return customers.find(c => c.id === id);
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, `organizations/${organizationId}/customers`, id);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) return undefined;
+
+    const customer = CustomerSchema.parse({ id: docSnap.id, ...docSnap.data() });
+
+    // Fetch activities subcollection
+    const activityCol = collection(db, `organizations/${organizationId}/customers/${id}/activity`);
+    const activitySnap = await getDocs(activityCol);
+    customer.activity = activitySnap.docs.map(d => ({id: d.id, ...d.data()})) as Activity[];
+
+    return customer;
 }
 
-export async function updateCustomer(id: string, updatedData: Partial<Omit<Customer, 'id'>>): Promise<Customer | null> {
-    initializeData();
-    let customerToUpdate = customers.find(c => c.id === id);
-    if(customerToUpdate) {
-        customerToUpdate = { ...customerToUpdate, ...updatedData };
-        customers = customers.map(c => c.id === id ? customerToUpdate! : c);
-        localStorage.setItem('customers', JSON.stringify(customers));
-        return customerToUpdate;
-    }
-    return null;
+export async function updateCustomer(id: string, updatedData: Partial<Omit<Customer, 'id'>>): Promise<void> {
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, `organizations/${organizationId}/customers`, id);
+    await updateDoc(docRef, updatedData);
 };
 
 export async function deleteCustomer(id: string): Promise<void> {
-    customers = customers.filter(c => c.id !== id);
-    localStorage.setItem('customers', JSON.stringify(customers));
-    return Promise.resolve();
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, `organizations/${organizationId}/customers`, id);
+    await deleteDoc(docRef);
 };
 
 // --- DEAL FUNCTIONS ---
 
 export async function getDeals(): Promise<Deal[]> {
-    initializeData();
-    const currentUser = getCurrentUser();
-    if (!currentUser) return [];
-    const userCustomers = await getCustomers();
-    const userCustomerIds = new Set(userCustomers.map(c => c.id));
+    const { organizationId } = getCurrentUserAuth();
+    const dealsCol = collection(db, `organizations/${organizationId}/deals`);
+    const snapshot = await getDocs(dealsCol);
     
-    const userDeals = deals.filter(d => d.organizationId === currentUser.organizationId);
-    
-    return userDeals.map(deal => {
-        const customer = userCustomers.find(c => c.id === deal.customerId);
-        return {
-            ...deal,
+    // Fetch related customers to populate company name
+    const customerIds = [...new Set(snapshot.docs.map(d => d.data().customerId))];
+    let customersById: Map<string, Customer> = new Map();
+
+    if(customerIds.length > 0) {
+        const customersQuery = query(collection(db, `organizations/${organizationId}/customers`), where(documentId(), 'in', customerIds));
+        const customersSnapshot = await getDocs(customersQuery);
+        customersSnapshot.docs.forEach(doc => {
+            customersById.set(doc.id, {id: doc.id, ...doc.data()} as Customer)
+        });
+    }
+
+    return snapshot.docs.map(d => {
+        const data = d.data();
+        const customer = customersById.get(data.customerId);
+        return DealSchema.parse({ 
+            id: d.id, 
+            ...data, 
+            closeDate: data.closeDate.toDate(),
             company: customer?.organization || 'N/A'
-        }
+        });
     });
 };
 
-export async function addDeal(dealData: Omit<Deal, 'id' | 'organizationId'> & { ownerId: string, organizationId: string }): Promise<Deal> {
-    initializeData();
-    const newDeal: Deal = {
+export async function addDeal(dealData: Omit<Deal, 'id' | 'organizationId' | 'ownerId'>): Promise<Deal> {
+    const { uid, organizationId } = getCurrentUserAuth();
+    const dealsCol = collection(db, `organizations/${organizationId}/deals`);
+    const docRef = await addDoc(dealsCol, {
         ...dealData,
-        id: `deal-${Date.now()}`,
-    };
-    deals.push(newDeal);
-localStorage.setItem('deals', JSON.stringify(deals));
-    return newDeal;
+        ownerId: uid,
+        organizationId
+    });
+    const newDealSnap = await getDoc(docRef);
+    const data = newDealSnap.data();
+    return DealSchema.parse({
+        id: newDealSnap.id,
+        ...data,
+        closeDate: data?.closeDate.toDate()
+    });
 };
 
 export async function getDealById(id: string): Promise<Deal | undefined> {
-    initializeData();
-    return deals.find(d => d.id === id);
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, `organizations/${organizationId}/deals`, id);
+    const docSnap = await getDoc(docRef);
+     if (!docSnap.exists()) return undefined;
+    const data = docSnap.data();
+    return DealSchema.parse({
+        id: docSnap.id,
+        ...data,
+        closeDate: data?.closeDate.toDate()
+    });
 }
 
-export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id'>>): Promise<Deal | null> {
-    initializeData();
-    let dealToUpdate = deals.find(d => d.id === id);
-    if(dealToUpdate) {
-        dealToUpdate = { ...dealToUpdate, ...updatedData };
-        deals = deals.map(d => d.id === id ? dealToUpdate! : d);
-        localStorage.setItem('deals', JSON.stringify(deals));
-        return dealToUpdate;
-    }
-    return null;
+export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id'>>): Promise<void> {
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, `organizations/${organizationId}/deals`, id);
+    // Firestore cannot store undefined, so we need to remove keys with undefined values
+    Object.keys(updatedData).forEach(key => updatedData[key as keyof typeof updatedData] === undefined && delete updatedData[key as keyof typeof updatedData]);
+    await updateDoc(docRef, updatedData);
 };
 
 export async function deleteDeal(id: string): Promise<void> {
-    deals = deals.filter(d => d.id !== id);
-    localStorage.setItem('deals', JSON.stringify(deals));
-    return Promise.resolve();
+    const { organizationId } = getCurrentUserAuth();
+    const docRef = doc(db, `organizations/${organizationId}/deals`, id);
+    await deleteDoc(docRef);
 };
 
 // --- ACTIVITY FUNCTIONS ---
 
-export async function addActivity(customerId: string, activityData: Omit<Activity, 'id' | 'date'>): Promise<Customer | null> {
-    initializeData();
-    let customer = customers.find(c => c.id === customerId);
-    if (customer) {
-        const newActivity: Activity = {
-            ...activityData,
-            id: `act-${Date.now()}`,
-            date: new Date(),
-        };
-        customer.activity = customer.activity ? [newActivity, ...customer.activity] : [newActivity];
-        customers = customers.map(c => c.id === customerId ? customer! : c);
-        localStorage.setItem('customers', JSON.stringify(customers));
-        return customer;
-    }
-    return null;
+export async function addActivity(customerId: string, activityData: Omit<Activity, 'id' | 'date'>): Promise<void> {
+    const { organizationId } = getCurrentUserAuth();
+    const activityCol = collection(db, `organizations/${organizationId}/customers/${customerId}/activity`);
+    await addDoc(activityCol, {
+        ...activityData,
+        date: new Date()
+    });
 }
 
 // --- LEAD FUNCTIONS ---
 
 export async function getLeads(): Promise<Lead[]> {
-    initializeData();
-    const currentUser = getCurrentUser();
-    if (!currentUser) return [];
-    return leads.filter(l => l.organizationId === currentUser.organizationId);
+    const { organizationId } = getCurrentUserAuth();
+    const leadsCol = collection(db, `organizations/${organizationId}/leads`);
+    const snapshot = await getDocs(leadsCol);
+    return snapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data(),
+        createdAt: d.data().createdAt.toDate()
+    } as Lead));
 }
 
-export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status'>): Promise<Lead> {
-    initializeData();
-    const newLead: Lead = {
+export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status' | 'ownerId' | 'organizationId'>): Promise<Lead> {
+    const { uid, organizationId } = getCurrentUserAuth();
+    const leadsCol = collection(db, `organizations/${organizationId}/leads`);
+    
+    const newLeadData = {
         ...leadData,
-        id: `lead-${Date.now()}`,
         createdAt: new Date(),
-        status: 'New'
-    };
-    leads.push(newLead);
-    localStorage.setItem('leads', JSON.stringify(leads));
-    return newLead;
+        status: 'New' as const,
+        ownerId: uid,
+        organizationId,
+    }
+
+    const docRef = await addDoc(leadsCol, newLeadData);
+    
+    return {
+        id: docRef.id,
+        ...newLeadData
+    }
 }
+
+// This is a placeholder for your actual dashboard data sources
+export const salesData = [];
+export const revenueData = [];
+export const leadsData = [];
+export const recentSales = [];
+export const teamPerformance = [];
+export const leadsSourceData = [];
+
+    
