@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { registerUser, Tier } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { createPaymentLink } from '@/lib/payment';
 
 const tiers = [
@@ -66,6 +66,30 @@ function PricingContent() {
     const searchParams = useSearchParams();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState<Tier | null>(null);
+
+     useEffect(() => {
+        const status = searchParams.get('status');
+        const message = searchParams.get('message');
+        if (status === 'cancelled') {
+            toast({
+                title: 'Payment Cancelled',
+                description: 'You have cancelled the payment process.',
+                variant: 'destructive'
+            });
+        } else if (status === 'failed') {
+             toast({
+                title: 'Payment Failed',
+                description: 'Your payment could not be processed. Please try again.',
+                variant: 'destructive'
+            });
+        } else if (status === 'error') {
+            toast({
+                title: 'An Error Occurred',
+                description: message || 'An unexpected error occurred during payment.',
+                variant: 'destructive'
+            });
+        }
+    }, [searchParams, toast]);
 
     const handleSelectTier = async (tier: Tier, price: string) => {
         setIsLoading(tier);
