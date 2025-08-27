@@ -14,6 +14,8 @@ import Link from 'next/link';
 import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { onAuthStateChanged } from 'firebase/auth';
+import { DealJourneyAnalysis } from '@/components/deal-journey-analysis';
+
 
 const getBadgeVariant = (stage: string) => {
     switch (stage.toLowerCase()) {
@@ -171,6 +173,7 @@ export default function DealDetailsPage() {
                                     </div>
                                 </CardContent>
                             </Card>
+                            <DealJourneyAnalysis deal={deal} />
                         </div>
 
                          <div className="md:col-span-2">

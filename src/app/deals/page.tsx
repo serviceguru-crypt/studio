@@ -356,7 +356,7 @@ export default function DealsPage() {
                                     <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                     <DropdownMenuItem asChild>
-                                        <Link href={`/deals/${deal.id}/edit`}>Edit</Link>
+                                        <Link href={`/deals/${deal.id}/edit`}>Update Deal</Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
                                         <Link href={`/deals/${deal.id}`}>View Details</Link>
