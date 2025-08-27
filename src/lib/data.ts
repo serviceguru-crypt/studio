@@ -12,6 +12,8 @@ import { scoreLead } from '@/ai/flows/score-lead-flow';
 // --- TYPE DEFINITIONS ---
 
 export type Role = 'Admin' | 'Sales Rep';
+export type Tier = 'Starter' | 'Pro' | 'Enterprise';
+
 
 export type User = {
     id: string;
@@ -20,12 +22,14 @@ export type User = {
     role: Role;
     avatar: string;
     organizationId: string;
+    tier?: Tier;
 }
 
 export type CompanyProfile = {
     id: string; // This will be the organizationId
     name: string;
     logo: string;
+    tier: Tier;
 }
 
 export type Lead = {
@@ -143,12 +147,14 @@ export async function registerUser(data: { name: string, email: string, password
         role: 'Admin',
         avatar: `https://i.pravatar.cc/150?u=${data.email}`,
         organizationId: organizationId,
+        tier: 'Starter',
     };
 
     const newCompanyProfile: CompanyProfile = {
         id: organizationId,
         name: data.organizationName,
         logo: '',
+        tier: 'Starter',
     };
     
     // Use a batch to write all initial data atomically
@@ -179,7 +185,11 @@ export async function loginUser(email: string, password: string): Promise<User |
         const userDocRef = doc(db, `organizations/${orgDoc.id}/users`, user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-            foundUser = userDoc.data() as User;
+            const orgProfile = orgDoc.data() as CompanyProfile;
+            foundUser = {
+                ...(userDoc.data() as Omit<User, 'tier'>),
+                tier: orgProfile.tier || 'Starter', // Set tier from organization
+            };
             localStorage.setItem('organizationId', foundUser.organizationId);
             localStorage.setItem('currentUser', JSON.stringify(foundUser));
             return foundUser;
@@ -199,7 +209,11 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
         const userDocRef = doc(db, `organizations/${orgDoc.id}/users`, user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-            const existingUser = userDoc.data() as User;
+            const orgProfile = orgDoc.data() as CompanyProfile;
+            const existingUser: User = {
+                ...(userDoc.data() as Omit<User, 'tier'>),
+                tier: orgProfile.tier || 'Starter',
+            };
             localStorage.setItem('organizationId', existingUser.organizationId);
             localStorage.setItem('currentUser', JSON.stringify(existingUser));
             return { user: existingUser, isNewUser: false };
@@ -217,12 +231,14 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
         role: 'Admin',
         avatar: user.photoURL || `https://i.pravatar.cc/150?u=${user.email}`,
         organizationId: organizationId,
+        tier: 'Starter'
     };
 
     const newCompanyProfile: CompanyProfile = {
         id: organizationId,
         name: organizationName,
         logo: user.photoURL || '',
+        tier: 'Starter',
     };
 
     const batch = writeBatch(db);

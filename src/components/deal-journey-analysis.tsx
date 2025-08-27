@@ -1,25 +1,39 @@
 
+
 "use client";
 
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from './ui/skeleton';
-import { Wand2 } from 'lucide-react';
+import { Wand2, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Deal } from '@/lib/data';
+import { Deal, Tier } from '@/lib/data';
 import { analyzeDealJourney } from '@/ai/flows/analyze-deal-journey-flow';
+import Link from 'next/link';
 
 interface DealJourneyAnalysisProps {
     deal: Deal;
+    userTier?: Tier;
 }
 
-export function DealJourneyAnalysis({ deal }: DealJourneyAnalysisProps) {
+export function DealJourneyAnalysis({ deal, userTier }: DealJourneyAnalysisProps) {
     const { toast } = useToast();
     const [analysis, setAnalysis] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const isProFeature = userTier === 'Pro' || userTier === 'Enterprise';
+
     const getAnalysis = async () => {
+        if (!isProFeature) {
+            toast({
+                title: 'Upgrade Required',
+                description: 'AI Deal Analysis is a Pro feature. Please upgrade to use it.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
         setLoading(true);
         setAnalysis('');
         try {
@@ -54,6 +68,14 @@ export function DealJourneyAnalysis({ deal }: DealJourneyAnalysisProps) {
         }
     };
 
+    const UpgradeButton = () => (
+         <Button variant="default" size="sm" className="w-full" asChild>
+            <Link href="/settings/billing">
+                <Zap className="h-4 w-4 mr-2" /> Upgrade to Pro
+            </Link>
+        </Button>
+    )
+
 
     return (
         <Card>
@@ -64,7 +86,7 @@ export function DealJourneyAnalysis({ deal }: DealJourneyAnalysisProps) {
                 <CardDescription>Get AI-powered insights on this deal's journey.</CardDescription>
             </CardHeader>
             <CardContent>
-                {analysis && !loading && (
+                {analysis && !loading && isProFeature && (
                      <p className="text-sm text-muted-foreground whitespace-pre-wrap mb-4">
                         {analysis}
                     </p>
@@ -76,15 +98,20 @@ export function DealJourneyAnalysis({ deal }: DealJourneyAnalysisProps) {
                         <Skeleton className="h-4 w-4/5" />
                     </div>
                 )}
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={getAnalysis} 
-                    disabled={loading}
-                    className="w-full"
-                >
-                    {loading ? 'Analyzing...' : (analysis ? 'Regenerate Analysis' : 'Analyze Deal Journey')}
-                </Button>
+                
+                {isProFeature ? (
+                    <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={getAnalysis} 
+                        disabled={loading}
+                        className="w-full"
+                    >
+                        {loading ? 'Analyzing...' : (analysis ? 'Regenerate Analysis' : 'Analyze Deal Journey')}
+                    </Button>
+                ) : (
+                    <UpgradeButton />
+                )}
             </CardContent>
         </Card>
     );

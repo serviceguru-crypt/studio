@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useEffect, useState, useCallback } from 'react';
@@ -7,7 +8,7 @@ import { DashboardLayout } from '@/components/dashboard-layout';
 import { Header } from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Deal, Customer, getDealById, getCustomerById, Activity, auth } from '@/lib/data';
+import { Deal, Customer, getDealById, getCustomerById, Activity, auth, getCurrentUser, User } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, MessageCircle, PhoneCall, Users, StickyNote, Workflow } from 'lucide-react';
 import Link from 'next/link';
@@ -48,9 +49,11 @@ export default function DealDetailsPage() {
     const { toast } = useToast();
     const [deal, setDeal] = useState<Deal | null>(null);
     const [customer, setCustomer] = useState<Customer | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [isAuthReady, setIsAuthReady] = useState(false);
 
     useEffect(() => {
+        setCurrentUser(getCurrentUser());
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             if (user) {
                 setIsAuthReady(true);
@@ -102,7 +105,7 @@ export default function DealDetailsPage() {
     }, [fetchDealDetails]);
 
 
-    if (!deal || !customer) {
+    if (!deal || !customer || !currentUser) {
         return (
             <DashboardLayout>
                 <div className="flex flex-col w-full">
@@ -173,7 +176,7 @@ export default function DealDetailsPage() {
                                     </div>
                                 </CardContent>
                             </Card>
-                            <DealJourneyAnalysis deal={deal} />
+                            <DealJourneyAnalysis deal={deal} userTier={currentUser.tier} />
                         </div>
 
                          <div className="md:col-span-2">
