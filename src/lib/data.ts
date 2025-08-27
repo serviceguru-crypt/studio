@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { z } from 'zod';
 
 
@@ -154,40 +155,74 @@ export async function loginUser(email: string, password: string): Promise<User |
     const user = userCredential.user;
 
     // After login, we need to find which organization this user belongs to.
-    const usersCollectionRef = collection(db, "users_flat"); // A flat collection for faster lookups
-    const q = query(usersCollectionRef, where("email", "==", email));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-       // This part is a fallback, creating a flat collection of users for easier lookup
-       // In a real scenario, you might have a different way to associate users to orgs on login
-        const orgsSnapshot = await getDocs(collection(db, "organizations"));
-        let foundUser: User | null = null;
-        for (const orgDoc of orgsSnapshot.docs) {
-            const userDocRef = doc(db, `organizations/${orgDoc.id}/users`, user.uid);
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists()) {
-                foundUser = userDoc.data() as User;
-                await setDoc(doc(db, "users_flat", user.uid), { email: foundUser.email, organizationId: foundUser.organizationId });
-                localStorage.setItem('organizationId', foundUser.organizationId);
-                localStorage.setItem('currentUser', JSON.stringify(foundUser));
-                return foundUser;
-            }
+    const orgsSnapshot = await getDocs(collection(db, "organizations"));
+    let foundUser: User | null = null;
+    for (const orgDoc of orgsSnapshot.docs) {
+        const userDocRef = doc(db, `organizations/${orgDoc.id}/users`, user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            foundUser = userDoc.data() as User;
+            localStorage.setItem('organizationId', foundUser.organizationId);
+            localStorage.setItem('currentUser', JSON.stringify(foundUser));
+            return foundUser;
         }
-        throw new Error("User record not found in any organization.");
+    }
+    throw new Error("User record not found in any organization.");
+};
+
+export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boolean }> {
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
+    const user = userCredential.user;
+
+    // Check if the user already exists in any organization
+    const orgsSnapshot = await getDocs(collection(db, "organizations"));
+    for (const orgDoc of orgsSnapshot.docs) {
+        const userDocRef = doc(db, `organizations/${orgDoc.id}/users`, user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            const existingUser = userDoc.data() as User;
+            localStorage.setItem('organizationId', existingUser.organizationId);
+            localStorage.setItem('currentUser', JSON.stringify(existingUser));
+            return { user: existingUser, isNewUser: false };
+        }
     }
 
-    const userData = querySnapshot.docs[0].data();
-    const userDocRef = doc(db, `organizations/${userData.organizationId}/users`, user.uid);
-    const userDoc = await getDoc(userDocRef);
-    if (!userDoc.exists()) {
-         throw new Error("User record not found in their organization.");
-    }
-    const fullUser = userDoc.data() as User;
-    localStorage.setItem('organizationId', fullUser.organizationId);
-    localStorage.setItem('currentUser', JSON.stringify(fullUser));
-    return fullUser;
-};
+    // If user does not exist, it's a new user. Create a new organization and user profile.
+    const organizationId = `org-${Date.now()}`;
+    const organizationName = `${user.displayName}'s Organization`;
+
+    const newUser: User = {
+        id: user.uid,
+        name: user.displayName || 'New User',
+        email: user.email!,
+        role: 'Admin',
+        avatar: user.photoURL || `https://i.pravatar.cc/150?u=${user.email}`,
+        organizationId: organizationId,
+    };
+
+    const newCompanyProfile: CompanyProfile = {
+        id: organizationId,
+        name: organizationName,
+        logo: user.photoURL || '',
+    };
+
+    const batch = writeBatch(db);
+    
+    const orgDocRef = doc(db, "organizations", organizationId);
+    batch.set(orgDocRef, newCompanyProfile);
+
+    const userDocRef = doc(db, `organizations/${organizationId}/users`, user.uid);
+    batch.set(userDocRef, newUser);
+    
+    await batch.commit();
+
+    localStorage.setItem('organizationId', organizationId);
+    localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+    return { user: newUser, isNewUser: true };
+}
+
 
 export function getCurrentUser(): User | null {
     if (typeof window === 'undefined') return null;
@@ -225,13 +260,15 @@ export async function getCustomers(): Promise<Customer[]> {
     return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
 
-export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity'>): Promise<Customer> {
+export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity' | 'organizationId' | 'ownerId'>): Promise<Customer> {
     const { uid, organizationId } = getCurrentUserAuth();
     const customersCol = collection(db, `organizations/${organizationId}/customers`);
     const docRef = await addDoc(customersCol, {
         ...customerData,
         ownerId: uid,
         organizationId,
+        avatar: `https://i.pravatar.cc/150?u=${customerData.email}`,
+        status: "Active"
     });
     const newCustomer = await getDoc(docRef);
     return CustomerSchema.parse({ id: newCustomer.id, ...newCustomer.data() });
@@ -273,7 +310,7 @@ export async function getDeals(): Promise<Deal[]> {
     const snapshot = await getDocs(dealsCol);
     
     // Fetch related customers to populate company name
-    const customerIds = [...new Set(snapshot.docs.map(d => d.data().customerId))];
+    const customerIds = [...new Set(snapshot.docs.map(d => d.data().customerId))].filter(Boolean);
     let customersById: Map<string, Customer> = new Map();
 
     if(customerIds.length > 0) {
@@ -391,5 +428,3 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
-
-    
