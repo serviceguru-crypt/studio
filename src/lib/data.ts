@@ -328,6 +328,16 @@ export async function inviteUser(data: { name: string, email: string, role: Role
     }
 }
 
+export async function deleteUser(userId: string): Promise<void> {
+    const { organizationId } = await getCurrentUserAuth();
+    const userDocRef = doc(db, `organizations/${organizationId}/users`, userId);
+    
+    // Note: This does not delete the user from Firebase Auth.
+    // This is often desired so they can be re-invited.
+    // For a permanent deletion, you'd need an admin SDK in a backend environment.
+    await deleteDoc(userDocRef);
+}
+
 
 export async function sendPasswordReset(email: string): Promise<void> {
     await sendPasswordResetEmail(auth, email);
@@ -653,5 +663,3 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
-
-    

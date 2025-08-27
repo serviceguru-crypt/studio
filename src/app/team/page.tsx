@@ -23,6 +23,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -32,7 +42,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, getCurrentUser, getUsersForOrganization, inviteUser, Role } from '@/lib/data';
+import { User, getCurrentUser, getUsersForOrganization, inviteUser, deleteUser as deleteUserFromDb } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
@@ -171,6 +181,7 @@ export default function TeamPage() {
     const [isLoading, setIsLoading] = React.useState(true);
     const [currentUser, setCurrentUser] = React.useState<User | null>(null);
     const [isInviteDialogOpen, setIsInviteDialogOpen] = React.useState(false);
+    const [userToDelete, setUserToDelete] = React.useState<User | null>(null);
 
 
     React.useEffect(() => {
@@ -209,6 +220,27 @@ export default function TeamPage() {
     React.useEffect(() => {
         fetchTeamMembers();
     }, [fetchTeamMembers]);
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        try {
+            await deleteUserFromDb(userToDelete.id);
+            toast({
+                title: "User Removed",
+                description: `${userToDelete.name} has been removed from the organization.`,
+            });
+            fetchTeamMembers();
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Removal Failed',
+                description: error.message || 'An unexpected error occurred.'
+            });
+        } finally {
+            setUserToDelete(null);
+        }
+    }
+
 
     if (!currentUser || currentUser.tier === 'Starter') {
         return (
@@ -302,15 +334,17 @@ export default function TeamPage() {
                                             <TableCell>
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <Button aria-haspopup="true" size="icon" variant="ghost" disabled={member.id === currentUser.id}>
                                                             <MoreHorizontal className="h-4 w-4" />
                                                             <span className="sr-only">Toggle menu</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                        <DropdownMenuItem>Edit Role</DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive">Remove User</DropdownMenuItem>
+                                                        <DropdownMenuItem disabled>Edit Role</DropdownMenuItem>
+                                                         {currentUser.role === 'Admin' && member.id !== currentUser.id && (
+                                                            <DropdownMenuItem className="text-destructive" onClick={() => setUserToDelete(member)}>Remove User</DropdownMenuItem>
+                                                         )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </TableCell>
@@ -324,8 +358,21 @@ export default function TeamPage() {
                 </main>
             </div>
             <InviteMemberDialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} onMemberInvited={fetchTeamMembers} />
+            
+            <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to remove {userToDelete?.name}?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently remove the user from your organization. They will no longer have access to this team's data.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteUser}>Remove User</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </DashboardLayout>
     );
 }
-
-    
