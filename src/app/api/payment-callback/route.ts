@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   if (status === 'successful' && transaction_id) {
     try {
-      const response = await flw.transaction.verify({ id: transaction_id });
+      const response = await flw.Transaction.verify({ id: transaction_id });
 
       if (
         response.data.status === "successful" &&
