@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { getDealById, updateDeal, getCustomers, Deal, Customer } from "@/lib/data";
+import { getDealById, updateAndRescoreDeal, getCustomers, Deal, Customer } from "@/lib/data";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
@@ -38,6 +38,7 @@ export default function EditDealPage() {
   const params = useParams();
   const { id } = params;
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [originalDeal, setOriginalDeal] = useState<Deal | null>(null);
 
   const form = useForm<DealFormValues>({
     resolver: zodResolver(dealFormSchema),
@@ -56,7 +57,7 @@ export default function EditDealPage() {
             if (!deal) {
               throw new Error('Deal not found');
             }
-
+            setOriginalDeal(deal);
             form.reset({
               ...deal,
               value: deal.value || 0,
@@ -75,12 +76,12 @@ export default function EditDealPage() {
   }, [fetchDealAndCustomers]);
 
   async function onSubmit(data: DealFormValues) {
-    if (id) {
+    if (id && originalDeal) {
         try {
-            await updateDeal(id as string, data);
+            await updateAndRescoreDeal(id as string, originalDeal, data);
             toast({
                 title: "Deal Updated",
-                description: "The deal has been updated successfully.",
+                description: "The deal has been updated successfully and is being re-scored.",
             });
             router.push(`/deals/${id}`);
             router.refresh();
@@ -100,8 +101,8 @@ export default function EditDealPage() {
             <form onSubmit={form.handleSubmit(onSubmit)}>
               <Card className="max-w-2xl mx-auto">
                 <CardHeader>
-                  <CardTitle>Edit Deal</CardTitle>
-                  <CardDescription>Update the details of the deal below.</CardDescription>
+                  <CardTitle>Update Deal</CardTitle>
+                  <CardDescription>Update the details of the deal below. Changes will be logged in the activity feed.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField

@@ -6,6 +6,7 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { z } from 'zod';
+import { scoreLead } from '@/ai/flows/score-lead-flow';
 
 
 // --- TYPE DEFINITIONS ---
@@ -51,6 +52,7 @@ export const DealSchema = z.object({
     justification: z.string().optional(),
     organizationId: z.string(),
     company: z.string().optional(),
+    activity: z.array(z.any()).optional(),
 });
 export type Deal = z.infer<typeof DealSchema>;
 
@@ -58,7 +60,7 @@ export type Deal = z.infer<typeof DealSchema>;
 export type Activity = {
     id: string;
     date: Date;
-    type: 'Email' | 'Call' | 'Meeting' | 'Note';
+    type: 'Email' | 'Call' | 'Meeting' | 'Note' | 'Update';
     notes: string;
 }
 
@@ -70,7 +72,7 @@ export const CustomerSchema = z.object({
     organization: z.string(),
     status: z.enum(['Active', 'Inactive']),
     avatar: z.string(),
-    activity: z.array(z.any()).optional(), // Activity is a subcollection, so we won't store it here directly
+    activity: z.array(z.any()).optional(), 
     ownerId: z.string(),
     organizationId: z.string(),
 })
@@ -359,13 +361,68 @@ export async function getDealById(id: string): Promise<Deal | undefined> {
     const docRef = doc(db, `organizations/${organizationId}/deals`, id);
     const docSnap = await getDoc(docRef);
      if (!docSnap.exists()) return undefined;
-    const data = docSnap.data();
-    return DealSchema.parse({
-        id: docSnap.id,
-        ...data,
-        closeDate: data?.closeDate.toDate()
+
+    const deal = DealSchema.parse({ 
+        id: docSnap.id, 
+        ...docSnap.data(),
+        closeDate: docSnap.data()?.closeDate.toDate(),
     });
+
+    const activityCol = collection(db, `organizations/${organizationId}/deals/${id}/activity`);
+    const activitySnap = await getDocs(activityCol);
+    deal.activity = activitySnap.docs.map(d => ({id: d.id, ...d.data()})) as Activity[];
+
+    return deal;
 }
+
+export async function updateAndRescoreDeal(dealId: string, oldData: Deal, newData: Partial<Deal>): Promise<void> {
+    const { organizationId } = getCurrentUserAuth();
+    const dealRef = doc(db, `organizations/${organizationId}/deals`, dealId);
+    
+    // Create activity logs for changes
+    const activityLogs: string[] = [];
+    if (newData.stage && newData.stage !== oldData.stage) {
+        activityLogs.push(`Deal stage changed from ${oldData.stage} to ${newData.stage}.`);
+    }
+    if (newData.value !== undefined && newData.value !== oldData.value) {
+        activityLogs.push(`Deal value updated from ₦${oldData.value.toLocaleString()} to ₦${newData.value.toLocaleString()}.`);
+    }
+    
+    const updatedDealData: Partial<Deal> = { ...newData };
+
+    // Re-score the lead if stage or value has changed
+    const needsRescoring = newData.stage || newData.value;
+    if (needsRescoring) {
+        const customer = await getCustomerById(oldData.customerId);
+        if (customer) {
+            const scoreResult = await scoreLead({
+                dealName: oldData.name,
+                organizationName: customer.organization,
+                dealValue: newData.value ?? oldData.value,
+                stage: newData.stage ?? oldData.stage,
+            });
+            updatedDealData.leadScore = scoreResult.leadScore;
+            updatedDealData.justification = scoreResult.justification;
+            activityLogs.push(`Lead score updated to ${scoreResult.leadScore}. Justification: ${scoreResult.justification}`);
+        }
+    }
+
+    const batch = writeBatch(db);
+    batch.update(dealRef, updatedDealData);
+
+    // Add all activity logs
+    activityLogs.forEach(log => {
+        const activityRef = doc(collection(db, `organizations/${organizationId}/deals/${dealId}/activity`));
+        batch.set(activityRef, {
+            date: new Date(),
+            type: 'Update',
+            notes: log,
+        });
+    });
+
+    await batch.commit();
+}
+
 
 export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id'>>): Promise<void> {
     const { organizationId } = getCurrentUserAuth();
@@ -478,4 +535,3 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
-
