@@ -2,12 +2,15 @@
 "use client"
 
 import { useState } from 'react';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from '@/hooks/use-toast';
 import { registerUser, signInWithGoogle } from '@/lib/data';
 import { Separator } from '@/components/ui/separator';
@@ -21,24 +24,41 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
+const signupFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  organizationName: z.string().min(2, { message: "Organization name must be at least 2 characters." }),
+  email: z.string().email({ message: "Please enter a valid email." }),
+  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"], // path of error
+});
+
+type SignupFormValues = z.infer<typeof signupFormSchema>;
 
 export default function SignupPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const [name, setName] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [organizationName, setOrganizationName] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    
+    const form = useForm<SignupFormValues>({
+        resolver: zodResolver(signupFormSchema),
+        defaultValues: {
+            name: "",
+            organizationName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+        },
+    });
 
-    const handleSignup = async () => {
-        setIsLoading(true);
+    async function onSubmit(data: SignupFormValues) {
         try {
             await registerUser({
-                name,
-                email,
-                password,
-                organizationName,
+                name: data.name,
+                email: data.email,
+                password: data.password,
+                organizationName: data.organizationName,
             });
             toast({
                 title: "Account Created",
@@ -51,15 +71,12 @@ export default function SignupPage() {
                 title: "Signup Failed",
                 description: error.message,
             });
-        } finally {
-            setIsLoading(false);
         }
     };
     
     const handleGoogleSignIn = async () => {
-        setIsLoading(true);
         try {
-            const { user, isNewUser } = await signInWithGoogle();
+            const { isNewUser } = await signInWithGoogle();
              if (isNewUser) {
                 toast({
                     title: "Account Created",
@@ -67,10 +84,9 @@ export default function SignupPage() {
                 });
                 router.push('/profile');
             } else {
-                // This case is unlikely on signup page, but handle it gracefully
                 toast({
                     title: "Login Successful",
-                    description: `Welcome back, ${user.name}!`,
+                    description: `Welcome back!`,
                 });
                 router.push('/dashboard');
             }
@@ -80,62 +96,105 @@ export default function SignupPage() {
                 title: "Google Sign-Up Failed",
                 description: error.message || "Could not sign up with Google. Please try again.",
             });
-        } finally {
-            setIsLoading(false);
         }
     }
 
+  const { formState: { isSubmitting } } = form;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
         <Card className="mx-auto max-w-sm w-full">
-        <CardHeader>
-            <CardTitle className="text-xl">Sign Up</CardTitle>
-            <CardDescription>
-            Enter your information to create an account
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="grid gap-4">
-                <div className="grid gap-2">
-                    <Label htmlFor="full-name">Full Name</Label>
-                    <Input id="full-name" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} disabled={isLoading} />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="organization-name">Organization Name</Label>
-                    <Input id="organization-name" placeholder="Acme Inc." required value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} disabled={isLoading} />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                    id="email"
-                    type="email"
-                    placeholder="m@example.com"
-                    required
-                    value={email} onChange={(e) => setEmail(e.target.value)}
-                    disabled={isLoading}
-                    />
-                </div>
-                <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} disabled={isLoading}/>
-                </div>
-                <Button type="submit" className="w-full" onClick={handleSignup} disabled={isLoading}>
-                    {isLoading ? "Creating Account..." : "Create an account"}
-                </Button>
-                <Separator className="my-2" />
-                <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+            <CardHeader>
+                <CardTitle className="text-xl">Sign Up</CardTitle>
+                <CardDescription>
+                Enter your information to create an account
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Full Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="John Doe" {...field} disabled={isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="organizationName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Organization Name</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Acme Inc." {...field} disabled={isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="email"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Email</FormLabel>
+                                    <FormControl>
+                                        <Input type="email" placeholder="m@example.com" {...field} disabled={isSubmitting}/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" {...field} disabled={isSubmitting}/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="confirmPassword"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Confirm Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" {...field} disabled={isSubmitting}/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <Button type="submit" className="w-full" disabled={isSubmitting}>
+                            {isSubmitting ? "Creating Account..." : "Create an account"}
+                        </Button>
+                    </form>
+                </Form>
+                <Separator className="my-4" />
+                <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSubmitting}>
                     <GoogleIcon className="mr-2 h-5 w-5" />
                     Sign up with Google
                 </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-            Already have an account?{' '}
-            <Link href="/login" className="underline">
-                Login
-            </Link>
-            </div>
-        </CardContent>
+                <div className="mt-4 text-center text-sm">
+                    Already have an account?{' '}
+                    <Link href="/login" className="underline">
+                        Login
+                    </Link>
+                </div>
+            </CardContent>
         </Card>
     </div>
   )

@@ -4,7 +4,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { z } from 'zod';
 
 
@@ -228,6 +228,10 @@ export function getCurrentUser(): User | null {
     if (typeof window === 'undefined') return null;
     const userJson = localStorage.getItem('currentUser');
     return userJson ? JSON.parse(userJson) : null;
+}
+
+export async function sendPasswordReset(email: string): Promise<void> {
+    await sendPasswordResetEmail(auth, email);
 }
 
 export async function logoutUser() {
