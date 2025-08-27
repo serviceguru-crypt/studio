@@ -16,6 +16,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Table,
   TableBody,
   TableCell,
@@ -29,10 +36,11 @@ import { z } from "zod";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
-import { Lead, User, addLead as addLeadData, getLeads as getLeadsFromDb, getCurrentUser } from '@/lib/data';
+import { Lead, User, addLead as addLeadData, getLeads as getLeadsFromDb, getCurrentUser, convertLeadToCustomer } from '@/lib/data';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useRouter } from 'next/navigation';
 
 const leadFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -63,8 +71,6 @@ function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onO
             }
             await addLeadData({
                 ...data,
-                ownerId: currentUser.id,
-                organizationId: currentUser.organizationId
             });
             toast({
                 title: "Lead Added",
@@ -160,6 +166,7 @@ function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onO
 }
 
 export default function LeadsPage() {
+    const router = useRouter();
     const [isAddLeadOpen, setIsAddLeadOpen] = React.useState(false);
     const [leads, setLeads] = React.useState<Lead[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
@@ -192,6 +199,24 @@ export default function LeadsPage() {
             description: "The ability to import leads from a CSV file is under development.",
         });
     };
+
+    const handleConvertLead = async (lead: Lead) => {
+        try {
+            const { customerId, dealId } = await convertLeadToCustomer(lead);
+            toast({
+                title: "Lead Converted!",
+                description: `${lead.name} is now a customer. A new deal has been created.`,
+            });
+            // Redirect to the new deal page to continue the sales process
+            router.push(`/deals/${dealId}`);
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Conversion Failed',
+                description: error.message || 'Could not convert the lead.'
+            });
+        }
+    }
 
   return (
     <DashboardLayout>
@@ -272,10 +297,20 @@ export default function LeadsPage() {
                                     <TableCell><Badge variant="secondary">{lead.status}</Badge></TableCell>
                                     <TableCell className="hidden md:table-cell">{format(new Date(lead.createdAt), 'PP')}</TableCell>
                                     <TableCell>
-                                        <Button aria-haspopup="true" size="icon" variant="ghost" disabled>
-                                            <MoreHorizontal className="h-4 w-4" />
-                                            <span className="sr-only">Toggle menu</span>
-                                        </Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                    <span className="sr-only">Toggle menu</span>
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem onClick={() => handleConvertLead(lead)}>
+                                                    Convert to Customer
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             ))}

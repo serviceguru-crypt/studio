@@ -425,6 +425,52 @@ export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status'
     }
 }
 
+export async function convertLeadToCustomer(lead: Lead): Promise<{ customerId: string, dealId: string }> {
+    const { uid, organizationId } = getCurrentUserAuth();
+    
+    const batch = writeBatch(db);
+
+    // 1. Create a new Customer
+    const customerRef = doc(collection(db, `organizations/${organizationId}/customers`));
+    const newCustomerData = {
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+        organization: lead.organization,
+        status: 'Active',
+        avatar: `https://i.pravatar.cc/150?u=${lead.email}`,
+        ownerId: uid,
+        organizationId,
+    };
+    batch.set(customerRef, newCustomerData);
+
+    // 2. Create a new Deal for that Customer
+    const dealRef = doc(collection(db, `organizations/${organizationId}/deals`));
+    const newDealData = {
+        name: `Initial Deal for ${lead.organization}`,
+        stage: 'Qualification',
+        value: 0, // Initial value, can be updated later
+        customerId: customerRef.id,
+        ownerId: uid,
+        organizationId,
+        closeDate: new Date(new Date().setDate(new Date().getDate() + 30)), // Set a default close date 30 days out
+    };
+    batch.set(dealRef, newDealData);
+    
+    // 3. Delete the Lead
+    const leadRef = doc(db, `organizations/${organizationId}/leads`, lead.id);
+    batch.delete(leadRef);
+
+    // 4. Commit all operations
+    await batch.commit();
+
+    return {
+        customerId: customerRef.id,
+        dealId: dealRef.id,
+    };
+}
+
+
 // This is a placeholder for your actual dashboard data sources
 export const salesData = [];
 export const revenueData = [];
@@ -432,3 +478,4 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
+
