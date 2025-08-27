@@ -34,6 +34,7 @@ export type Lead = {
     email: string;
     organization: string;
     phone?: string;
+    source: string;
     createdAt: any;
     status: 'New' | 'Contacted' | 'Qualified' | 'Disqualified';
     ownerId: string; // The user who created the lead

@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { z } from "zod";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -47,6 +48,7 @@ const leadFormSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
   organization: z.string().min(2, { message: "Organization name must be at least 2 characters." }),
   phone: z.string().optional(),
+  source: z.string({ required_error: "Please select a lead source." }),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -149,6 +151,31 @@ function AddLeadDialog({ open, onOpenChange, onLeadAdded }: { open: boolean, onO
                                         <Input placeholder="+234..." {...field} disabled={form.formState.isSubmitting} />
                                     </FormControl>
                                     <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="source"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Lead Source</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={form.formState.isSubmitting}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a source" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="Website">Website</SelectItem>
+                                        <SelectItem value="Referral">Referral</SelectItem>
+                                        <SelectItem value="Social Media">Social Media</SelectItem>
+                                        <SelectItem value="Cold Call">Cold Call</SelectItem>
+                                        <SelectItem value="Event">Event</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -258,6 +285,7 @@ export default function LeadsPage() {
                                 <TableRow>
                                     <TableHead>Name</TableHead>
                                     <TableHead>Organization</TableHead>
+                                    <TableHead>Source</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead className="hidden md:table-cell">Created</TableHead>
                                     <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -268,6 +296,7 @@ export default function LeadsPage() {
                                     <TableRow key={i}>
                                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                         <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
                                         <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24" /></TableCell>
                                         <TableCell><Skeleton className="h-8 w-8" /></TableCell>
@@ -281,6 +310,7 @@ export default function LeadsPage() {
                             <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Organization</TableHead>
+                                <TableHead>Source</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="hidden md:table-cell">Created</TableHead>
                                 <TableHead><span className="sr-only">Actions</span></TableHead>
@@ -294,6 +324,7 @@ export default function LeadsPage() {
                                         <div className="text-sm text-muted-foreground">{lead.email}</div>
                                     </TableCell>
                                     <TableCell>{lead.organization}</TableCell>
+                                    <TableCell>{lead.source}</TableCell>
                                     <TableCell><Badge variant="secondary">{lead.status}</Badge></TableCell>
                                     <TableCell className="hidden md:table-cell">{format(new Date(lead.createdAt), 'PP')}</TableCell>
                                     <TableCell>
