@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { User } from "@/lib/data";
+import { User, logoutUser } from "@/lib/data";
 import { useRouter } from "next/navigation";
 
 interface HeaderProps {
@@ -73,8 +73,8 @@ export function Header({ date, onDateChange }: HeaderProps) {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('currentUser');
+  const handleLogout = async () => {
+    await logoutUser();
     router.push('/login');
   };
 
