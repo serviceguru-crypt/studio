@@ -4,7 +4,7 @@
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, arrayUnion, setDoc, query, where, documentId, writeBatch } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail, User as FirebaseUser } from 'firebase/auth';
 import { z } from 'zod';
 import { scoreLead } from '@/ai/flows/score-lead-flow';
 
@@ -29,12 +29,12 @@ export type CompanyProfile = {
 }
 
 export type Lead = {
-    id: string;
+    id:string;
     name: string;
     email: string;
     organization: string;
     phone?: string;
-    createdAt: Date;
+    createdAt: any;
     status: 'New' | 'Contacted' | 'Qualified' | 'Disqualified';
     ownerId: string; // The user who created the lead
     organizationId: string;
@@ -47,7 +47,7 @@ export const DealSchema = z.object({
     value: z.number(),
     customerId: z.string(),
     ownerId: z.string(),
-    closeDate: z.date(),
+    closeDate: z.any(),
     leadScore: z.enum(['Hot', 'Warm', 'Cold']).optional(),
     justification: z.string().optional(),
     organizationId: z.string(),
@@ -59,7 +59,7 @@ export type Deal = z.infer<typeof DealSchema>;
 
 export type Activity = {
     id: string;
-    date: Date;
+    date: any;
     type: 'Email' | 'Call' | 'Meeting' | 'Note' | 'Update';
     notes: string;
 }
@@ -95,12 +95,27 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
 export const auth = getAuth(app);
 
-
 // --- UTILITY FUNCTIONS ---
+let authReady = false;
+let authPromise: Promise<FirebaseUser | null> | null = null;
+
+const ensureAuthReady = (): Promise<FirebaseUser | null> => {
+    if (!authPromise) {
+        authPromise = new Promise((resolve) => {
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+                authReady = true;
+                resolve(user);
+                unsubscribe();
+            });
+        });
+    }
+    return authPromise;
+};
+
 
 // Helper to get current user's auth UID and organization ID
-function getCurrentUserAuth() {
-    const user = auth.currentUser;
+async function getCurrentUserAuth() {
+    const user = await ensureAuthReady();
     if (!user) {
         throw new Error("Not authenticated. Please log in.");
     }
@@ -240,19 +255,20 @@ export async function logoutUser() {
     await signOut(auth);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('organizationId');
+    authPromise = null;
 }
 
 // --- COMPANY PROFILE FUNCTIONS ---
 
 export async function getCompanyProfile(): Promise<CompanyProfile | null> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, 'organizations', organizationId);
     const docSnap = await getDoc(docRef);
     return docSnap.exists() ? docSnap.data() as CompanyProfile : null;
 }
 
 export async function updateCompanyProfile(profile: Partial<CompanyProfile>): Promise<void> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, 'organizations', organizationId);
     await updateDoc(docRef, profile);
 }
@@ -260,14 +276,14 @@ export async function updateCompanyProfile(profile: Partial<CompanyProfile>): Pr
 // --- CUSTOMER FUNCTIONS ---
 
 export async function getCustomers(): Promise<Customer[]> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const customersCol = collection(db, `organizations/${organizationId}/customers`);
     const snapshot = await getDocs(customersCol);
     return snapshot.docs.map(d => CustomerSchema.parse({ id: d.id, ...d.data() }));
 };
 
 export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity' | 'organizationId' | 'ownerId'>): Promise<Customer> {
-    const { uid, organizationId } = getCurrentUserAuth();
+    const { uid, organizationId } = await getCurrentUserAuth();
     const customersCol = collection(db, `organizations/${organizationId}/customers`);
     const docRef = await addDoc(customersCol, {
         ...customerData,
@@ -281,7 +297,7 @@ export async function addCustomer(customerData: Omit<Customer, 'id' | 'activity'
 };
 
 export async function getCustomerById(id: string): Promise<Customer | undefined> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, `organizations/${organizationId}/customers`, id);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) return undefined;
@@ -297,13 +313,13 @@ export async function getCustomerById(id: string): Promise<Customer | undefined>
 }
 
 export async function updateCustomer(id: string, updatedData: Partial<Omit<Customer, 'id'>>): Promise<void> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, `organizations/${organizationId}/customers`, id);
     await updateDoc(docRef, updatedData);
 };
 
 export async function deleteCustomer(id: string): Promise<void> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, `organizations/${organizationId}/customers`, id);
     await deleteDoc(docRef);
 };
@@ -311,7 +327,7 @@ export async function deleteCustomer(id: string): Promise<void> {
 // --- DEAL FUNCTIONS ---
 
 export async function getDeals(): Promise<Deal[]> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const dealsCol = collection(db, `organizations/${organizationId}/deals`);
     const snapshot = await getDocs(dealsCol);
     
@@ -333,14 +349,14 @@ export async function getDeals(): Promise<Deal[]> {
         return DealSchema.parse({ 
             id: d.id, 
             ...data, 
-            closeDate: data.closeDate.toDate(),
+            closeDate: data.closeDate?.toDate ? data.closeDate.toDate() : new Date(),
             company: customer?.organization || 'N/A'
         });
     });
 };
 
 export async function addDeal(dealData: Omit<Deal, 'id' | 'organizationId' | 'ownerId'>): Promise<Deal> {
-    const { uid, organizationId } = getCurrentUserAuth();
+    const { uid, organizationId } = await getCurrentUserAuth();
     const dealsCol = collection(db, `organizations/${organizationId}/deals`);
     const docRef = await addDoc(dealsCol, {
         ...dealData,
@@ -357,26 +373,31 @@ export async function addDeal(dealData: Omit<Deal, 'id' | 'organizationId' | 'ow
 };
 
 export async function getDealById(id: string): Promise<Deal | undefined> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, `organizations/${organizationId}/deals`, id);
     const docSnap = await getDoc(docRef);
      if (!docSnap.exists()) return undefined;
 
+    const data = docSnap.data();
     const deal = DealSchema.parse({ 
         id: docSnap.id, 
-        ...docSnap.data(),
-        closeDate: docSnap.data()?.closeDate.toDate(),
+        ...data,
+        closeDate: data?.closeDate?.toDate ? data.closeDate.toDate() : new Date(),
     });
 
     const activityCol = collection(db, `organizations/${organizationId}/deals/${id}/activity`);
     const activitySnap = await getDocs(activityCol);
-    deal.activity = activitySnap.docs.map(d => ({id: d.id, ...d.data()})) as Activity[];
+    deal.activity = activitySnap.docs.map(d => ({
+        id: d.id, 
+        ...d.data(),
+        date: d.data().date?.toDate ? d.data().date.toDate() : new Date(),
+    })) as Activity[];
 
     return deal;
 }
 
 export async function updateAndRescoreDeal(dealId: string, oldData: Deal, newData: Partial<Deal>): Promise<void> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const dealRef = doc(db, `organizations/${organizationId}/deals`, dealId);
     
     // Create activity logs for changes
@@ -425,7 +446,7 @@ export async function updateAndRescoreDeal(dealId: string, oldData: Deal, newDat
 
 
 export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id'>>): Promise<void> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, `organizations/${organizationId}/deals`, id);
     // Firestore cannot store undefined, so we need to remove keys with undefined values
     Object.keys(updatedData).forEach(key => updatedData[key as keyof typeof updatedData] === undefined && delete updatedData[key as keyof typeof updatedData]);
@@ -433,7 +454,7 @@ export async function updateDeal(id: string, updatedData: Partial<Omit<Deal, 'id
 };
 
 export async function deleteDeal(id: string): Promise<void> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const docRef = doc(db, `organizations/${organizationId}/deals`, id);
     await deleteDoc(docRef);
 };
@@ -441,7 +462,7 @@ export async function deleteDeal(id: string): Promise<void> {
 // --- ACTIVITY FUNCTIONS ---
 
 export async function addActivity(customerId: string, activityData: Omit<Activity, 'id' | 'date'>): Promise<void> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const activityCol = collection(db, `organizations/${organizationId}/customers/${customerId}/activity`);
     await addDoc(activityCol, {
         ...activityData,
@@ -452,7 +473,7 @@ export async function addActivity(customerId: string, activityData: Omit<Activit
 // --- LEAD FUNCTIONS ---
 
 export async function getLeads(): Promise<Lead[]> {
-    const { organizationId } = getCurrentUserAuth();
+    const { organizationId } = await getCurrentUserAuth();
     const leadsCol = collection(db, `organizations/${organizationId}/leads`);
     const snapshot = await getDocs(leadsCol);
     return snapshot.docs.map(d => ({
@@ -463,7 +484,7 @@ export async function getLeads(): Promise<Lead[]> {
 }
 
 export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status' | 'ownerId' | 'organizationId'>): Promise<Lead> {
-    const { uid, organizationId } = getCurrentUserAuth();
+    const { uid, organizationId } = await getCurrentUserAuth();
     const leadsCol = collection(db, `organizations/${organizationId}/leads`);
     
     const newLeadData = {
@@ -483,7 +504,7 @@ export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status'
 }
 
 export async function convertLeadToCustomer(lead: Lead): Promise<{ customerId: string, dealId: string }> {
-    const { uid, organizationId } = getCurrentUserAuth();
+    const { uid, organizationId } = await getCurrentUserAuth();
     
     const batch = writeBatch(db);
 
