@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, getCurrentUser, getUsersForOrganization } from '@/lib/data';
+import { User, getCurrentUser, getUsersForOrganization, inviteUser, Role } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
@@ -47,26 +47,36 @@ const inviteFormSchema = z.object({
   name: z.string().min(2, "Name is required"),
   email: z.string().email("Invalid email address"),
   role: z.enum(["Admin", "Sales Rep"]),
+  password: z.string().min(8, "Password must be at least 8 characters long."),
 });
 
 type InviteFormValues = z.infer<typeof inviteFormSchema>;
 
-function InviteMemberDialog({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+function InviteMemberDialog({ open, onOpenChange, onMemberInvited }: { open: boolean, onOpenChange: (open: boolean) => void, onMemberInvited: () => void }) {
     const form = useForm<InviteFormValues>({
         resolver: zodResolver(inviteFormSchema),
-        defaultValues: { role: 'Sales Rep' }
+        defaultValues: { role: 'Sales Rep', name: '', email: '', password: '' }
     });
 
     const { toast } = useToast();
 
     async function onSubmit(data: InviteFormValues) {
-        // TODO: Implement invitation logic in the next step
-        console.log("Invitation data:", data);
-        toast({
-            title: "Invitation Sent (Simulated)",
-            description: `${data.name} has been invited to join the team.`,
-        });
-        onOpenChange(false);
+        try {
+            await inviteUser(data);
+            toast({
+                title: "Invitation Sent",
+                description: `${data.name} has been invited to join the team.`,
+            });
+            onMemberInvited();
+            onOpenChange(false);
+            form.reset();
+        } catch (error: any) {
+            toast({
+                variant: 'destructive',
+                title: 'Invitation Failed',
+                description: error.message || 'An unexpected error occurred.'
+            })
+        }
     }
 
     return (
@@ -101,6 +111,19 @@ function InviteMemberDialog({ open, onOpenChange }: { open: boolean, onOpenChang
                                     <FormLabel>Email Address</FormLabel>
                                     <FormControl>
                                         <Input placeholder="e.g. tunde.ojo@example.com" {...field} disabled={form.formState.isSubmitting} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="password"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Temporary Password</FormLabel>
+                                    <FormControl>
+                                        <Input type="password" placeholder="Set an initial password" {...field} disabled={form.formState.isSubmitting} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -300,7 +323,7 @@ export default function TeamPage() {
                     </Card>
                 </main>
             </div>
-            <InviteMemberDialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} />
+            <InviteMemberDialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen} onMemberInvited={fetchTeamMembers} />
         </DashboardLayout>
     );
 }

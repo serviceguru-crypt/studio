@@ -285,6 +285,49 @@ export async function getUsersForOrganization(): Promise<User[]> {
     return snapshot.docs.map(d => d.data() as User);
 }
 
+export async function inviteUser(data: { name: string, email: string, role: Role, password: string }): Promise<User> {
+    const { organizationId, tier } = await getCurrentUserAuth();
+
+    // Create a temporary auth instance to create the new user, to avoid signing out the current admin
+    const tempApp = initializeApp(firebaseConfig, `temp-app-${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, data.email, data.password);
+        const newUserAuth = userCredential.user;
+
+        const newUser: User = {
+            id: newUserAuth.uid,
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            avatar: `https://i.pravatar.cc/150?u=${data.email}`,
+            organizationId: organizationId,
+            tier: tier,
+        };
+
+        const userDocRef = doc(db, `organizations/${organizationId}/users`, newUserAuth.uid);
+        await setDoc(userDocRef, newUser);
+        
+        return newUser;
+
+    } catch (error) {
+        // Handle specific auth errors, e.g., email already in use
+        console.error("Error inviting user:", error);
+        if (error instanceof Error && 'code' in error) {
+            const authError = error as { code: string, message: string };
+            if (authError.code === 'auth/email-already-in-use') {
+                throw new Error("This email address is already in use by another account.");
+            }
+        }
+        throw new Error("An unexpected error occurred while inviting the user.");
+    } finally {
+        await signOut(tempAuth);
+        // Deleting the temporary app instance is not directly available in the client SDK, 
+        // but it will be garbage collected. The important part is signing out.
+    }
+}
+
 
 export async function sendPasswordReset(email: string): Promise<void> {
     await sendPasswordResetEmail(auth, email);
