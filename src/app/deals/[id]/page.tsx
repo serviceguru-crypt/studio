@@ -11,7 +11,7 @@ import { Deal, Customer, getDealById, getCustomerById, Activity } from '@/lib/da
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, MessageCircle, PhoneCall, Users, StickyNote, Workflow } from 'lucide-react';
 import Link from 'next/link';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 const getBadgeVariant = (stage: string) => {
@@ -55,7 +55,10 @@ export default function DealDetailsPage() {
                 }
                  if (foundDeal.activity) {
                     foundDeal.activity.forEach(act => {
-                        if (typeof act.date === 'string') {
+                        // Firestore Timestamp objects have a toDate() method
+                        if (act.date && typeof act.date.toDate === 'function') {
+                            act.date = act.date.toDate();
+                        } else if (typeof act.date === 'string') {
                             act.date = new Date(act.date);
                         }
                     });
@@ -97,7 +100,7 @@ export default function DealDetailsPage() {
         )
     }
 
-    const isValidDate = deal.closeDate && !isNaN(new Date(deal.closeDate).getTime());
+    const isValidDate = deal.closeDate && isValid(new Date(deal.closeDate));
 
     return (
         <DashboardLayout>
@@ -165,7 +168,11 @@ export default function DealDetailsPage() {
                                 <CardContent>
                                     {deal.activity && deal.activity.length > 0 ? (
                                          <div className="space-y-6">
-                                            {deal.activity.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((item: Activity) => (
+                                            {deal.activity.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((item: Activity) => {
+                                                const activityDate = new Date(item.date);
+                                                const isActivityDateValid = isValid(activityDate);
+
+                                                return (
                                                 <div key={item.id} className="flex gap-4">
                                                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                                                         <ActivityIcon type={item.type} />
@@ -173,14 +180,17 @@ export default function DealDetailsPage() {
                                                     <div className="flex-1">
                                                         <div className="flex items-baseline justify-between">
                                                             <p className="font-semibold">{item.type}</p>
-                                                            <p className="text-xs text-muted-foreground" title={format(new Date(item.date), "PPpp")}>
-                                                                {formatDistanceToNow(new Date(item.date), { addSuffix: true })}
-                                                            </p>
+                                                            {isActivityDateValid ? (
+                                                                <p className="text-xs text-muted-foreground" title={format(activityDate, "PPpp")}>
+                                                                    {formatDistanceToNow(activityDate, { addSuffix: true })}
+                                                                </p>
+                                                            ) : <p className="text-xs text-muted-foreground">Invalid date</p>}
                                                         </div>
                                                         <p className="text-sm text-muted-foreground whitespace-pre-wrap">{item.notes}</p>
                                                     </div>
                                                 </div>
-                                            ))}
+                                                )
+                                            })}
                                          </div>
                                     ) : (
                                         <p className="text-muted-foreground text-center py-4">No activity logged for this deal yet.</p>
