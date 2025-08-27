@@ -36,23 +36,24 @@ export default function DashboardPage() {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
-    const deals = await getDeals();
-    const custs = await getCustomers();
-    setAllDeals(deals.map(d => ({ ...d, closeDate: new Date(d.closeDate) })));
-    setCustomers(custs);
-    setIsLoading(false);
+    try {
+      const deals = await getDeals();
+      const custs = await getCustomers();
+      setAllDeals(deals.map(d => ({ ...d, closeDate: new Date(d.closeDate) })));
+      setCustomers(custs);
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     fetchData();
-    // Auto-refresh data every 60 seconds
-    const intervalId = setInterval(fetchData, 60000); 
-
-    // This is a simple way to refetch on window focus, you might want a more robust solution
+    // Re-fetch data when the component mounts and when the window gains focus
     window.addEventListener('focus', fetchData);
     
     return () => {
-      clearInterval(intervalId);
       window.removeEventListener('focus', fetchData);
     };
   }, [fetchData]);
@@ -124,13 +125,15 @@ export default function DashboardPage() {
               <Skeleton className="h-[125px] w-full" />
               <Skeleton className="h-[125px] w-full" />
             </div>
-            <div className="grid gap-4 md:gap-8 lg:grid-cols-7">
-              <Skeleton className="col-span-full lg:col-span-4 h-[350px]" />
-              <Skeleton className="col-span-full lg:col-span-3 h-[350px]" />
-            </div>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8">
-              <Skeleton className="h-[350px] w-full" />
-              <Skeleton className="h-[350px] w-full" />
+            <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-4">
+                <Skeleton className="h-[350px]" />
+                <Skeleton className="h-[400px]" />
+              </div>
+              <div className="space-y-4">
+                 <Skeleton className="h-[350px]" />
+                 <Skeleton className="h-[350px]" />
+              </div>
             </div>
           </main>
         </div>
@@ -149,17 +152,15 @@ export default function DashboardPage() {
             <MetricCard title="New Leads" value={`+${metrics.totalLeads.toLocaleString()}`} icon={<Users className="h-4 w-4" />} description="All leads acquired" />
             <MetricCard title="Active Deals" value={`${metrics.activeDealsCount}`} icon={<Briefcase className="h-4 w-4" />} description="All deals not yet closed" />
           </div>
-          <div className="grid gap-4 md:gap-8 lg:grid-cols-7">
-            <div className="col-span-full lg:col-span-4">
+          <div className="grid grid-cols-1 gap-4 md:gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-4">
                <LineChartCard data={salesChartData} />
+               <RecentSales data={metrics.recentSales} totalSales={metrics.totalSales} />
             </div>
-            <div className="col-span-full lg:col-span-3">
+            <div className="lg:col-span-1 space-y-4">
                <AiSummary metrics={metrics} />
+               <PieChartCard data={metrics.leadsBySource} />
             </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 md:gap-8">
-              <PieChartCard data={metrics.leadsBySource} />
-              <RecentSales data={metrics.recentSales} totalSales={metrics.totalSales} />
           </div>
         </main>
       </div>
