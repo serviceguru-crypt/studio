@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from '@/hooks/use-toast';
-import { registerUser, signInWithGoogle } from '@/lib/data';
+import { signInWithGoogle } from '@/lib/data';
 import { Separator } from '@/components/ui/separator';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -53,25 +53,14 @@ export default function SignupPage() {
     });
 
     async function onSubmit(data: SignupFormValues) {
-        try {
-            await registerUser({
-                name: data.name,
-                email: data.email,
-                password: data.password,
-                organizationName: data.organizationName,
-            });
-            toast({
-                title: "Account Created",
-                description: "Welcome! Please set up your company profile.",
-            });
-            router.push('/profile');
-        } catch (error: any) {
-             toast({
-                variant: "destructive",
-                title: "Signup Failed",
-                description: error.message,
-            });
-        }
+        // Instead of registering user, redirect to pricing page with form data
+        const params = new URLSearchParams({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            organizationName: data.organizationName,
+        });
+        router.push(`/pricing?${params.toString()}`);
     };
     
     const handleGoogleSignIn = async () => {
@@ -179,7 +168,7 @@ export default function SignupPage() {
                             )}
                         />
                         <Button type="submit" className="w-full" disabled={isSubmitting}>
-                            {isSubmitting ? "Creating Account..." : "Create an account"}
+                            {isSubmitting ? "Continuing..." : "Continue"}
                         </Button>
                     </form>
                 </Form>

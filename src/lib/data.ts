@@ -134,7 +134,7 @@ async function getCurrentUserAuth() {
 
 // --- AUTH FUNCTIONS ---
 
-export async function registerUser(data: { name: string, email: string, password: string, organizationName: string }): Promise<User> {
+export async function registerUser(data: { name: string, email: string, password: string, organizationName: string, tier: Tier }): Promise<User> {
     const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
     const user = userCredential.user;
 
@@ -147,14 +147,14 @@ export async function registerUser(data: { name: string, email: string, password
         role: 'Admin',
         avatar: `https://i.pravatar.cc/150?u=${data.email}`,
         organizationId: organizationId,
-        tier: 'Starter',
+        tier: data.tier,
     };
 
     const newCompanyProfile: CompanyProfile = {
         id: organizationId,
         name: data.organizationName,
         logo: '',
-        tier: 'Starter',
+        tier: data.tier,
     };
     
     // Use a batch to write all initial data atomically
@@ -186,9 +186,15 @@ export async function loginUser(email: string, password: string): Promise<User |
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
             const orgProfile = orgDoc.data() as CompanyProfile;
+             if (!orgProfile.tier) {
+                // This is an existing user from before tiers were introduced.
+                // Upgrade them to Enterprise.
+                orgProfile.tier = 'Enterprise';
+                await updateDoc(doc(db, "organizations", orgDoc.id), { tier: 'Enterprise' });
+            }
             foundUser = {
                 ...(userDoc.data() as Omit<User, 'tier'>),
-                tier: orgProfile.tier || 'Starter', // Set tier from organization
+                tier: orgProfile.tier
             };
             localStorage.setItem('organizationId', foundUser.organizationId);
             localStorage.setItem('currentUser', JSON.stringify(foundUser));
@@ -210,9 +216,13 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
             const orgProfile = orgDoc.data() as CompanyProfile;
+            if (!orgProfile.tier) {
+                orgProfile.tier = 'Enterprise';
+                 await updateDoc(doc(db, "organizations", orgDoc.id), { tier: 'Enterprise' });
+            }
             const existingUser: User = {
                 ...(userDoc.data() as Omit<User, 'tier'>),
-                tier: orgProfile.tier || 'Starter',
+                tier: orgProfile.tier,
             };
             localStorage.setItem('organizationId', existingUser.organizationId);
             localStorage.setItem('currentUser', JSON.stringify(existingUser));
@@ -221,8 +231,10 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
     }
 
     // If user does not exist, it's a new user. Create a new organization and user profile.
+    // For Google Sign-In, we will assign Starter tier by default and let them upgrade.
     const organizationId = `org-${Date.now()}`;
     const organizationName = `${user.displayName}'s Organization`;
+    const defaultTier = 'Starter';
 
     const newUser: User = {
         id: user.uid,
@@ -231,14 +243,14 @@ export async function signInWithGoogle(): Promise<{ user: User, isNewUser: boole
         role: 'Admin',
         avatar: user.photoURL || `https://i.pravatar.cc/150?u=${user.email}`,
         organizationId: organizationId,
-        tier: 'Starter'
+        tier: defaultTier
     };
 
     const newCompanyProfile: CompanyProfile = {
         id: organizationId,
         name: organizationName,
         logo: user.photoURL || '',
-        tier: 'Starter',
+        tier: defaultTier,
     };
 
     const batch = writeBatch(db);
