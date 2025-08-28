@@ -76,10 +76,10 @@ export function LandingPage() {
                     </div>
                      <div className="flex justify-center">
                         <Image
-                            src="https://picsum.photos/600/400"
+                            src="https://picsum.photos/600/401"
                             alt="AI analysis infographic"
                             width={600}
-                            height={400}
+                            height={401}
                             className="rounded-xl shadow-xl ring-1 ring-black/10"
                             data-ai-hint="data analysis"
                         />
@@ -90,9 +90,9 @@ export function LandingPage() {
                  <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
                      <div className="flex justify-center md:order-2">
                         <Image
-                            src="https://picsum.photos/600/400"
+                            src="https://picsum.photos/601/400"
                             alt="Customer profile screenshot"
-                            width={600}
+                            width={601}
                             height={400}
                             className="rounded-xl shadow-xl ring-1 ring-black/10"
                             data-ai-hint="customer profile"
@@ -124,10 +124,10 @@ export function LandingPage() {
                     </div>
                      <div className="flex justify-center">
                         <Image
-                            src="https://picsum.photos/600/400"
+                            src="https://picsum.photos/600/402"
                             alt="Sales pipeline dashboard"
                             width={600}
-                            height={400}
+                            height={402}
                             className="rounded-xl shadow-xl ring-1 ring-black/10"
                             data-ai-hint="sales pipeline"
                         />
