@@ -140,7 +140,7 @@ export default function EditCustomerPage() {
                         accept="image/*"
                         className="hidden"
                     />
-                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={form.formState.isSubmitting}>
                         Upload Photo
                     </Button>
                   </div>

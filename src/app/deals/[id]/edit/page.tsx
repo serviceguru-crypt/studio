@@ -92,6 +92,8 @@ export default function EditDealPage() {
     }
   }
 
+  const { isSubmitting } = form.formState;
+
   return (
     <DashboardLayout>
       <div className="flex flex-col w-full">
@@ -112,7 +114,7 @@ export default function EditDealPage() {
                       <FormItem>
                         <FormLabel>Deal Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g. ERP System for AgriMart" {...field} disabled={form.formState.isSubmitting} />
+                          <Input placeholder="e.g. ERP System for AgriMart" {...field} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -124,7 +126,7 @@ export default function EditDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Customer</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={form.formState.isSubmitting}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a customer" />
@@ -149,7 +151,7 @@ export default function EditDealPage() {
                       <FormItem>
                         <FormLabel>Value (₦)</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="e.g. 7500000" {...field} disabled={form.formState.isSubmitting} />
+                          <Input type="number" placeholder="e.g. 7500000" {...field} disabled={isSubmitting} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -161,7 +163,7 @@ export default function EditDealPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Stage</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={form.formState.isSubmitting}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a deal stage" />
@@ -194,7 +196,7 @@ export default function EditDealPage() {
                                   "w-full pl-3 text-left font-normal",
                                   !field.value && "text-muted-foreground"
                                 )}
-                                disabled={form.formState.isSubmitting}
+                                disabled={isSubmitting}
                               >
                                 {field.value ? (
                                   format(field.value, "PPP")
@@ -223,8 +225,8 @@ export default function EditDealPage() {
                   <Button variant="outline" asChild>
                     <Link href={`/deals/${id}`}>Cancel</Link>
                   </Button>
-                  <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Saving...' : 'Save Changes'}
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
                   </Button>
                 </CardFooter>
               </Card>

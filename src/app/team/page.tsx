@@ -89,6 +89,7 @@ function InviteMemberDialog({ open, onOpenChange, onMemberInvited }: { open: boo
             })
         }
     }
+    const { isSubmitting } = form.formState;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -108,7 +109,7 @@ function InviteMemberDialog({ open, onOpenChange, onMemberInvited }: { open: boo
                                 <FormItem>
                                     <FormLabel>Full Name</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="e.g. Tunde Ojo" {...field} disabled={form.formState.isSubmitting} />
+                                        <Input placeholder="e.g. Tunde Ojo" {...field} disabled={isSubmitting} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -121,7 +122,7 @@ function InviteMemberDialog({ open, onOpenChange, onMemberInvited }: { open: boo
                                 <FormItem>
                                     <FormLabel>Email Address</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="e.g. tunde.ojo@example.com" {...field} disabled={form.formState.isSubmitting} />
+                                        <Input placeholder="e.g. tunde.ojo@example.com" {...field} disabled={isSubmitting} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -134,7 +135,7 @@ function InviteMemberDialog({ open, onOpenChange, onMemberInvited }: { open: boo
                                 <FormItem>
                                     <FormLabel>Temporary Password</FormLabel>
                                     <FormControl>
-                                        <Input type="password" placeholder="Set an initial password" {...field} disabled={form.formState.isSubmitting} />
+                                        <Input type="password" placeholder="Set an initial password" {...field} disabled={isSubmitting} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -146,7 +147,7 @@ function InviteMemberDialog({ open, onOpenChange, onMemberInvited }: { open: boo
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Role</FormLabel>
-                                     <Select onValueChange={field.onChange} value={field.value} disabled={form.formState.isSubmitting}>
+                                     <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                                         <FormControl>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select a role" />
@@ -163,8 +164,8 @@ function InviteMemberDialog({ open, onOpenChange, onMemberInvited }: { open: boo
                         />
                         <DialogFooter>
                             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                            <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting ? "Sending..." : "Send Invitation"}
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? "Sending..." : "Send Invitation"}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -183,6 +184,7 @@ export default function TeamPage() {
     const [currentUser, setCurrentUser] = React.useState<User | null>(null);
     const [isInviteDialogOpen, setIsInviteDialogOpen] = React.useState(false);
     const [userToDelete, setUserToDelete] = React.useState<User | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
 
 
     React.useEffect(() => {
@@ -224,6 +226,7 @@ export default function TeamPage() {
 
     const handleDeleteUser = async () => {
         if (!userToDelete) return;
+        setIsDeleting(true);
         try {
             await deleteUserFromDb(userToDelete.id);
             toast({
@@ -239,6 +242,7 @@ export default function TeamPage() {
             });
         } finally {
             setUserToDelete(null);
+            setIsDeleting(false);
         }
     }
 
@@ -370,7 +374,9 @@ export default function TeamPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setUserToDelete(null)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteUser}>Remove User</AlertDialogAction>
+                    <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting}>
+                        {isDeleting ? 'Removing...' : 'Remove User'}
+                    </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

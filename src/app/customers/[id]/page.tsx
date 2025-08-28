@@ -169,6 +169,8 @@ export default function CustomerDetailsPage() {
         );
     };
 
+    const { isSubmitting } = form.formState;
+
     return (
         <DashboardLayout>
             <div className="flex flex-col w-full">
@@ -250,7 +252,7 @@ export default function CustomerDetailsPage() {
                                                 render={({ field }) => (
                                                     <FormItem>
                                                         <FormLabel>Activity Type</FormLabel>
-                                                        <Select onValueChange={field.onChange} value={field.value}>
+                                                        <Select onValueChange={field.onChange} value={field.value} disabled={isSubmitting}>
                                                             <FormControl>
                                                                 <SelectTrigger>
                                                                     <SelectValue placeholder="Select activity type" />
@@ -274,13 +276,15 @@ export default function CustomerDetailsPage() {
                                                     <FormItem>
                                                         <FormLabel>Notes</FormLabel>
                                                         <FormControl>
-                                                            <Textarea placeholder="Log details of the interaction..." {...field} />
+                                                            <Textarea placeholder="Log details of the interaction..." {...field} disabled={isSubmitting}/>
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>
                                                 )}
                                             />
-                                            <Button type="submit">Log Activity</Button>
+                                            <Button type="submit" disabled={isSubmitting}>
+                                                {isSubmitting ? 'Logging...' : 'Log Activity'}
+                                            </Button>
                                         </form>
                                     </Form>
                                 </CardContent>
