@@ -5,11 +5,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/data';
 
-export default function HomePage() {
+export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const user = getCurrentUser();
+    const user = getCurrentUser(true);
     if (user) {
       router.replace('/dashboard');
     } else {
@@ -18,7 +18,7 @@ export default function HomePage() {
   }, [router]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex items-center justify-center min-h-screen bg-background">
       <p>Loading...</p>
     </div>
   );
