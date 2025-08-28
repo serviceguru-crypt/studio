@@ -11,7 +11,7 @@ import React from 'react';
 // --- Reusable Components ---
 
 export const LandingHeader = () => (
-    <header className="w-full px-4 md:px-6 py-4 flex items-center justify-between bg-white shadow-sm sticky top-0 z-50">
+    <header className="w-full px-4 md:px-6 py-4 flex items-center justify-between bg-background/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">
         <Link href="/" className="flex items-center gap-2">
             <Briefcase className="h-6 w-6 text-primary" />
             <span className="font-bold text-lg">N-CRM</span>
@@ -40,7 +40,7 @@ interface FeatureCardProps {
 }
 
 export const FeatureCard = ({ icon, title, description }: FeatureCardProps) => (
-    <div className="flex flex-col items-center text-center p-6">
+    <div className="flex flex-col items-center text-center p-6 bg-background rounded-lg shadow-sm">
         <div className="mb-4 bg-primary/10 p-3 rounded-full">{icon}</div>
         <h3 className="text-xl font-bold mb-2">{title}</h3>
         <p className="text-muted-foreground">{description}</p>
@@ -55,7 +55,7 @@ interface TestimonialCardProps {
 }
 
 export const TestimonialCard = ({ quote, author, role, avatar }: TestimonialCardProps) => (
-    <Card className="flex-shrink-0 w-full md:w-[400px]">
+    <Card className="flex-shrink-0 w-full">
         <CardContent className="p-6">
             <blockquote className="text-lg mb-4">"{quote}"</blockquote>
             <div className="flex items-center gap-4">
