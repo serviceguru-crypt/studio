@@ -159,7 +159,6 @@ export default function LandingPage() {
                                 name="Aisha Bello" 
                                 role="Sales Manager, TechSavvy Inc."
                                 avatar="https://picsum.photos/100/100?person1"
-                                data-ai-hint="person"
                                 >
                                 N-CRM's AI insights are a game-changer. We've cut down on analysis time and can focus on the hottest leads. Our closing rate is up 20%!
                             </TestimonialCard>
@@ -167,7 +166,6 @@ export default function LandingPage() {
                                 name="Chidi Okoro" 
                                 role="Founder, Innovate Solutions"
                                 avatar="https://picsum.photos/100/100?person2"
-                                data-ai-hint="person"
                                 >
                                 As a startup, we need a tool that's powerful but easy to use. N-CRM is perfect. We were up and running in a day and managing our pipeline like pros.
                             </TestimonialCard>
@@ -175,7 +173,6 @@ export default function LandingPage() {
                                 name="Fatima Yusuf" 
                                 role="Account Executive, Enterprise West"
                                 avatar="https://picsum.photos/100/100?person3"
-                                data-ai-hint="person"
                                 >
                                 The deal journey analysis helped me save a major account. I was able to pinpoint where the deal stalled and re-engage effectively. Highly recommend!
                             </TestimonialCard>
@@ -211,3 +208,5 @@ export default function LandingPage() {
         </div>
     )
 }
+
+    
