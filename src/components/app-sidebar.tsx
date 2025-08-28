@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useEffect, useState } from 'react';
 import { getCompanyProfile, getCurrentUser } from '@/lib/data';
+import { Logo } from './logo';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -61,7 +62,7 @@ export function AppSidebar() {
             <Avatar className="h-8 w-8">
                 <AvatarImage src={companyLogo || undefined} alt={companyName} />
                 <AvatarFallback>
-                    <Briefcase className="h-5 w-5 text-primary"/>
+                    <Logo className="h-8 w-8"/>
                 </AvatarFallback>
             </Avatar>
             <span className="font-bold text-xl group-data-[collapsible=icon]:hidden">{companyName}</span>

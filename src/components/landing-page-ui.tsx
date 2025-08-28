@@ -7,13 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Briefcase } from 'lucide-react';
 import React from 'react';
+import { Logo } from './logo';
 
 // --- Reusable Components ---
 
 export const LandingHeader = () => (
     <header className="w-full px-4 md:px-6 py-4 flex items-center justify-between bg-background/80 backdrop-blur-sm shadow-sm sticky top-0 z-50">
         <Link href="/" className="flex items-center gap-2">
-            <Briefcase className="h-6 w-6 text-primary" />
+            <Logo className="h-8 w-8" />
             <span className="font-bold text-lg">N-CRM</span>
         </Link>
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
