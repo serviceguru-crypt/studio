@@ -40,6 +40,12 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // The `true` argument ensures we check the actual logged-in user,
+      // not a "view-as" user, which is crucial for protecting the route.
+      if (!getCurrentUser(true)) {
+        router.replace('/login');
+        return;
+      }
       const deals = await getDeals();
       const custs = await getCustomers();
       const leadData = await getLeads();
@@ -48,16 +54,19 @@ export default function DashboardPage() {
       setLeads(leadData);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
+      // It's possible the error is due to an invalid/expired session.
+      // Redirecting to login is a safe fallback.
+      router.replace('/login');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const handleDataFetch = () => fetchData();
     handleDataFetch(); // Initial fetch
     
-    // Set up listeners
+    // Set up listeners to refetch data on certain browser events
     window.addEventListener('focus', handleDataFetch);
     window.addEventListener('userChanged', handleDataFetch);
     

@@ -16,6 +16,7 @@ export function LandingPage() {
 
   useEffect(() => {
     // If the user is already logged in, redirect them to the dashboard.
+    // The `true` argument gets the actual logged-in user, not the "view-as" user.
     if (getCurrentUser(true)) {
       router.replace('/dashboard');
     }
