@@ -122,7 +122,7 @@ export function LandingPage() {
             </Button>
           </div>
         </section>
-      </footer>
+      </main>
     </div>
   );
 }
