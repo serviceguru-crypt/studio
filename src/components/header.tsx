@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { addDays, format } from "date-fns";
-import { Calendar as CalendarIcon, LogOut, Plus, Search, Users, Building } from "lucide-react";
+import { Calendar as CalendarIcon, LogOut, Plus, Search, Users, Building, Settings } from "lucide-react";
 import * as React from "react";
 import { DateRange } from "react-day-picker";
 import { Input } from "@/components/ui/input";
@@ -43,7 +44,7 @@ export function Header({ date, onDateChange }: HeaderProps) {
   const [loggedInUser, setLoggedInUser] = React.useState<User | null>(null);
   const [allUsers, setAllUsers] = React.useState<User[]>([]);
 
-  React.useEffect(() => {
+  const loadData = React.useCallback(() => {
     const user = getCurrentUser(); // This gets the "view as" user
     setCurrentUser(user);
 
@@ -62,6 +63,12 @@ export function Header({ date, onDateChange }: HeaderProps) {
         loadUsers();
     }
   }, []);
+
+  React.useEffect(() => {
+    loadData();
+    window.addEventListener('userChanged', loadData);
+    return () => window.removeEventListener('userChanged', loadData);
+  }, [loadData]);
 
   const handleUserChange = (userId: string) => {
     if (userId === 'org-view') {
@@ -191,9 +198,11 @@ export function Header({ date, onDateChange }: HeaderProps) {
                   </>
                )}
               <DropdownMenuItem asChild>
-                  <Link href="/profile">Profile</Link>
+                  <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem disabled>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />

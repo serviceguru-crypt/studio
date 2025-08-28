@@ -34,22 +34,23 @@ export function AppSidebar() {
   const [userTier, setUserTier] = useState<string | undefined>('');
 
 
-  useEffect(() => {
-    async function loadProfile() {
-        const user = getCurrentUser();
-        // Only fetch profile if a user is actually logged in.
-        // This prevents auth errors on page load.
-        if (user) { 
-            setUserTier(user.tier);
-            const profile = await getCompanyProfile();
-            if(profile) {
-                setCompanyName(profile.name);
-                setCompanyLogo(profile.logo);
-            }
+  const loadProfile = async () => {
+    const user = getCurrentUser();
+    if (user) { 
+        setUserTier(user.tier);
+        const profile = await getCompanyProfile();
+        if(profile) {
+            setCompanyName(profile.name);
+            setCompanyLogo(profile.logo);
         }
     }
+  }
+
+  useEffect(() => {
     loadProfile();
-  }, [pathname]); // Re-run on navigation to update if needed
+    window.addEventListener('userChanged', loadProfile);
+    return () => window.removeEventListener('userChanged', loadProfile);
+  }, [pathname]);
 
   const showTeamManagement = userTier === 'Pro' || userTier === 'Enterprise';
 
@@ -93,17 +94,11 @@ export function AppSidebar() {
       <SidebarFooter className="p-2">
         <SidebarMenu>
             <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: "Profile", side:"right"}} asChild>
-                    <Link href="/profile">
-                        <Building/>
-                        <span>Profile</span>
+                <SidebarMenuButton tooltip={{children: "Settings", side:"right"}} asChild isActive={pathname.startsWith('/settings')}>
+                    <Link href="/settings">
+                        <Settings/>
+                        <span>Settings</span>
                     </Link>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-                <SidebarMenuButton tooltip={{children: "Settings", side:"right"}}>
-                    <Settings/>
-                    <span>Settings</span>
                 </SidebarMenuButton>
             </SidebarMenuItem>
         </SidebarMenu>
