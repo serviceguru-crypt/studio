@@ -6,9 +6,21 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { LandingHeader, FeatureCard, TestimonialCard } from '@/components/landing-page-ui';
 import { Zap, Eye, BarChartHorizontalBig } from 'lucide-react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCurrentUser } from '@/lib/data';
 
 
 export function LandingPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    // If the user is already logged in, redirect them to the dashboard.
+    if (getCurrentUser(true)) {
+      router.replace('/dashboard');
+    }
+  }, [router]);
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <LandingHeader />
@@ -110,16 +122,6 @@ export function LandingPage() {
             </Button>
           </div>
         </section>
-      </main>
-
-      <footer className="w-full py-6 bg-white border-t">
-        <div className="container mx-auto px-4 md:px-6 flex justify-between items-center text-sm text-muted-foreground">
-          <p>© 2024 N-CRM. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
-            <Link href="/login" className="hover:text-foreground">Login</Link>
-          </div>
-        </div>
       </footer>
     </div>
   );

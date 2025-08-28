@@ -36,17 +36,6 @@ export default function DashboardPage() {
     from: addDays(new Date(), -30),
     to: new Date(),
   });
-  const [isAuthReady, setIsAuthReady] = useState(false);
-
-
-  useEffect(() => {
-    const loggedInUser = getCurrentUser(true);
-    if (!loggedInUser) {
-      router.replace('/login');
-    } else {
-      setIsAuthReady(true);
-    }
-  }, [router]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -65,8 +54,6 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAuthReady) return;
-
     const handleDataFetch = () => fetchData();
     handleDataFetch(); // Initial fetch
     
@@ -78,7 +65,7 @@ export default function DashboardPage() {
       window.removeEventListener('focus', handleDataFetch);
       window.removeEventListener('userChanged', handleDataFetch);
     };
-  }, [isAuthReady, fetchData]);
+  }, [fetchData]);
   
   const filteredDeals = useMemo(() => {
     if (!date?.from || !date?.to) return allDeals;
@@ -149,7 +136,7 @@ export default function DashboardPage() {
     };
   }, [isLoading, allDeals, filteredDeals, customers, leads]);
   
-  if (!isAuthReady || isLoading || !metrics) {
+  if (isLoading || !metrics) {
     return (
       <DashboardLayout>
         <div className="flex flex-col w-full">
