@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { LandingHeader, FeatureCard, TestimonialCard } from '@/components/landing-page-ui';
-import { Zap, Eye, BarChartHorizontalBig } from 'lucide-react';
+import { Zap, Eye, BarChartHorizontalBig, CheckCircle } from 'lucide-react';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser } from '@/lib/data';
@@ -56,30 +56,86 @@ export function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="w-full py-20 md:py-24 bg-muted/50">
-          <div className="container mx-auto px-4 md:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold">Everything you need to grow your business</h2>
-              <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">Powerful features to supercharge your sales process.</p>
+            <div className="container mx-auto px-4 md:px-6">
+                 <div className="text-center mb-16">
+                    <h2 className="text-3xl md:text-4xl font-bold">Everything you need to grow your business</h2>
+                    <p className="text-lg text-muted-foreground mt-2 max-w-2xl mx-auto">Powerful features to supercharge your sales process.</p>
+                </div>
+
+                {/* Feature 1: AI Insights */}
+                <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
+                    <div className="flex flex-col gap-4">
+                        <Zap className="h-10 w-10 text-primary mb-2" />
+                        <h3 className="text-2xl md:text-3xl font-bold">AI-Powered Insights</h3>
+                        <p className="text-muted-foreground text-lg">Let AI do the heavy lifting. Automatically score leads to prioritize your hottest prospects, generate professional follow-up emails in seconds, and get deep analysis on your deal journeys to understand what's working and what's not.</p>
+                        <ul className="space-y-2 mt-2">
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> AI Lead Scoring</li>
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> AI Email Composition</li>
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> Deal Journey Analysis</li>
+                        </ul>
+                    </div>
+                     <div className="flex justify-center">
+                        <Image
+                            src="https://picsum.photos/600/400"
+                            alt="AI analysis infographic"
+                            width={600}
+                            height={400}
+                            className="rounded-xl shadow-xl ring-1 ring-black/10"
+                            data-ai-hint="data analysis"
+                        />
+                    </div>
+                </div>
+
+                {/* Feature 2: Customer View */}
+                 <div className="grid md:grid-cols-2 gap-12 items-center mb-24">
+                     <div className="flex justify-center md:order-2">
+                        <Image
+                            src="https://picsum.photos/600/400"
+                            alt="Customer profile screenshot"
+                            width={600}
+                            height={400}
+                            className="rounded-xl shadow-xl ring-1 ring-black/10"
+                            data-ai-hint="customer profile"
+                        />
+                    </div>
+                    <div className="flex flex-col gap-4 md:order-1">
+                        <Eye className="h-10 w-10 text-primary mb-2" />
+                        <h3 className="text-2xl md:text-3xl font-bold">360° Customer View</h3>
+                        <p className="text-muted-foreground text-lg">Build stronger relationships with a complete picture of every customer. See all their contact information, past interactions, and deal history in one organized view. Never lose context again.</p>
+                        <ul className="space-y-2 mt-2">
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> Centralized Contact Info</li>
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> Complete Activity History</li>
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> Associated Deals</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                 {/* Feature 3: Sales Pipeline */}
+                <div className="grid md:grid-cols-2 gap-12 items-center">
+                    <div className="flex flex-col gap-4">
+                        <BarChartHorizontalBig className="h-10 w-10 text-primary mb-2" />
+                        <h3 className="text-2xl md:text-3xl font-bold">Streamlined Sales Pipeline</h3>
+                        <p className="text-muted-foreground text-lg">From new leads to closed deals, manage your entire sales process with our intuitive drag-and-drop pipeline. Visualize your workflow, identify bottlenecks, and forecast revenue with powerful analytics.</p>
+                         <ul className="space-y-2 mt-2">
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> Visual Deal Stages</li>
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> In-depth Analytics</li>
+                           <li className="flex items-center gap-2 text-muted-foreground"><CheckCircle className="h-5 w-5 text-green-500" /> Revenue Forecasting</li>
+                        </ul>
+                    </div>
+                     <div className="flex justify-center">
+                        <Image
+                            src="https://picsum.photos/600/400"
+                            alt="Sales pipeline dashboard"
+                            width={600}
+                            height={400}
+                            className="rounded-xl shadow-xl ring-1 ring-black/10"
+                            data-ai-hint="sales pipeline"
+                        />
+                    </div>
+                </div>
             </div>
-            <div className="grid md:grid-cols-3 gap-8">
-              <FeatureCard
-                icon={<Zap className="h-8 w-8 text-primary" />}
-                title="AI-Powered Insights"
-                description="Let AI analyze your deals, score your leads, and compose professional emails so you can focus on selling."
-              />
-              <FeatureCard
-                icon={<Eye className="h-8 w-8 text-primary" />}
-                title="360° Customer View"
-                description="Track every interaction, from initial lead to final sale, in one centralized place."
-              />
-              <FeatureCard
-                icon={<BarChartHorizontalBig className="h-8 w-8 text-primary" />}
-                title="Streamlined Sales Pipeline"
-                description="Visualize your entire sales process, identify bottlenecks, and forecast revenue with our intuitive dashboards."
-              />
-            </div>
-          </div>
         </section>
+
 
         {/* Testimonials Section */}
         <section className="w-full py-20 md:py-24 bg-background">
