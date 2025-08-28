@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { loginUser, signInWithGoogle } from '@/lib/data';
 import { Separator } from '@/components/ui/separator';
+import { ArrowLeft } from 'lucide-react';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -138,6 +139,12 @@ export default function LoginPage() {
               Sign up
             </Link>
           </div>
+           <div className="mt-4 text-center text-sm">
+                <Link href="/" className="underline flex items-center justify-center gap-1 text-muted-foreground">
+                 <ArrowLeft className="h-3 w-3" />
+                 Back to Home
+                </Link>
+            </div>
         </CardContent>
       </Card>
     </div>
