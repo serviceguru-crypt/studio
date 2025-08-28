@@ -115,9 +115,9 @@ function PricingContent() {
                 await registerUser(signupData);
                 toast({
                     title: 'Account Created!',
-                    description: "Welcome to your new CRM. Let's get your profile set up.",
+                    description: "Welcome to your new CRM. Let's get started.",
                 });
-                router.push('/profile');
+                router.push('/login');
             } catch (error: any) {
                 toast({
                     variant: 'destructive',
@@ -134,7 +134,7 @@ function PricingContent() {
                 const paymentLink = await createPaymentLink(signupData, numericPrice, tier);
                 
                 if (paymentLink) {
-                    router.push(paymentLink);
+                    window.location.href = paymentLink;
                 } else {
                      throw new Error('Could not generate payment link.');
                 }

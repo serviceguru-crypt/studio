@@ -261,6 +261,7 @@ export default function LeadsPage() {
     const [isAddLeadOpen, setIsAddLeadOpen] = React.useState(false);
     const [leads, setLeads] = React.useState<Lead[]>([]);
     const [isLoading, setIsLoading] = React.useState(true);
+    const [isConverting, setIsConverting] = React.useState<string | null>(null);
     const [currentUser, setCurrentUser] = React.useState<User | null>(null);
     const [teamMembers, setTeamMembers] = React.useState<User[]>([]);
     const [leadToAssign, setLeadToAssign] = React.useState<Lead | null>(null);
@@ -302,6 +303,7 @@ export default function LeadsPage() {
     };
 
     const handleConvertLead = async (lead: Lead) => {
+        setIsConverting(lead.id);
         try {
             const { customerId, dealId } = await convertLeadToCustomer(lead);
             toast({
@@ -315,6 +317,8 @@ export default function LeadsPage() {
                 title: 'Conversion Failed',
                 description: error.message || 'Could not convert the lead.'
             });
+        } finally {
+            setIsConverting(null);
         }
     }
     
@@ -417,8 +421,8 @@ export default function LeadsPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => handleConvertLead(lead)}>
-                                                    Convert to Customer
+                                                <DropdownMenuItem onClick={() => handleConvertLead(lead)} disabled={isConverting === lead.id}>
+                                                    {isConverting === lead.id ? 'Converting...' : 'Convert to Customer'}
                                                 </DropdownMenuItem>
                                                 {currentUser?.role === 'Admin' && (
                                                     <DropdownMenuItem onClick={() => handleOpenAssignDialog(lead)}>

@@ -179,6 +179,9 @@ export async function registerUser(data: { name: string, email: string, password
     await batch.commit();
 
     localStorage.setItem('loggedInUser', JSON.stringify(newUser));
+    // After registration, we should log them in fully
+    await signInWithEmailAndPassword(auth, data.email, data.password);
+
 
     return newUser;
 };
@@ -345,7 +348,7 @@ export async function inviteUser(data: { name: string, email: string, role: Role
     const tempAuth = getAuth(tempApp);
 
     try {
-        const signInMethods = await fetchSignInMethodsForEmail(tempAuth, data.email);
+        const signInMethods = await fetchSignInMethodsForEmail(auth, data.email);
         if (signInMethods.length > 0) {
             throw new Error("This email address is already in use by another account.");
         }
@@ -654,7 +657,7 @@ export async function addLead(leadData: Omit<Lead, 'id' | 'createdAt' | 'status'
         const end = endOfMonth(now);
 
         const leadsCol = collection(db, `organizations/${organizationId}/leads`);
-        const q = query(leadsCol, where("createdAt", ">=", start), where("createdAt", "<=", end));
+        const q = query(leadsCol, where("ownerId", "==", uid), where("createdAt", ">=", start), where("createdAt", "<=", end));
         const snapshot = await getDocs(q);
 
         if (snapshot.size >= 25) {

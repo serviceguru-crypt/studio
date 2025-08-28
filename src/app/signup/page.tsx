@@ -40,6 +40,7 @@ type SignupFormValues = z.infer<typeof signupFormSchema>;
 export default function SignupPage() {
     const router = useRouter();
     const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
     
     const form = useForm<SignupFormValues>({
         resolver: zodResolver(signupFormSchema),
@@ -53,6 +54,7 @@ export default function SignupPage() {
     });
 
     async function onSubmit(data: SignupFormValues) {
+        setIsLoading(true);
         // Instead of registering user, redirect to pricing page with form data
         const params = new URLSearchParams({
             name: data.name,
@@ -64,6 +66,7 @@ export default function SignupPage() {
     };
     
     const handleGoogleSignIn = async () => {
+        setIsLoading(true);
         try {
             const { isNewUser } = await signInWithGoogle();
              if (isNewUser) {
@@ -85,10 +88,12 @@ export default function SignupPage() {
                 title: "Google Sign-Up Failed",
                 description: error.message || "Could not sign up with Google. Please try again.",
             });
+        } finally {
+            setIsLoading(false);
         }
     }
 
-  const { formState: { isSubmitting } } = form;
+  const isSubmitting = form.formState.isSubmitting || isLoading;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -175,7 +180,7 @@ export default function SignupPage() {
                 <Separator className="my-4" />
                 <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSubmitting}>
                     <GoogleIcon className="mr-2 h-5 w-5" />
-                    Sign up with Google
+                    {isLoading ? "Redirecting..." : "Sign up with Google"}
                 </Button>
                 <div className="mt-4 text-center text-sm">
                     Already have an account?{' '}
