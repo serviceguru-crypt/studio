@@ -1,204 +1,126 @@
+
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { DashboardLayout } from '@/components/dashboard-layout';
-import { Header } from '@/components/header';
-import { MetricCard } from '@/components/metric-card';
-import { LineChartCard } from '@/components/charts/line-chart-card';
-import { PieChartCard } from '@/components/charts/pie-chart-card';
-import { AiSummary } from '@/components/ai-summary';
-import { getDeals, getCustomers, getLeads, Deal, Customer, Lead, getCurrentUser } from '@/lib/data';
-import { RecentSales } from '@/components/recent-sales';
-import { Users, DollarSign, Briefcase, ShoppingCart } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { addDays, isWithinInterval, format, startOfMonth } from 'date-fns';
-import type { DateRange } from 'react-day-picker';
-import { useRouter } from 'next/navigation';
-
-const leadSourceColors: Record<string, string> = {
-  'Website': 'hsl(var(--chart-1))',
-  'Referral': 'hsl(var(--chart-2))',
-  'Social Media': 'hsl(var(--chart-3))',
-  'Cold Call': 'hsl(var(--chart-4))',
-  'Event': 'hsl(var(--chart-5))',
-  'Other': 'hsl(var(--muted))',
-};
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { LandingHeader, FeatureCard, TestimonialCard } from '@/components/landing-page-ui';
+import { Zap, Eye, BarChartHorizontalBig } from 'lucide-react';
 
 
-export default function DashboardPage() {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [allDeals, setAllDeals] = useState<Deal[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [date, setDate] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -30),
-    to: new Date(),
-  });
-  const [isAuthReady, setIsAuthReady] = useState(false);
-
-
-  useEffect(() => {
-    const loggedInUser = getCurrentUser(true);
-    if (!loggedInUser) {
-      router.replace('/login');
-    } else {
-      setIsAuthReady(true);
-    }
-  }, [router]);
-
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const deals = await getDeals();
-      const custs = await getCustomers();
-      const leadData = await getLeads();
-      setAllDeals(deals.map(d => ({ ...d, closeDate: new Date(d.closeDate) })));
-      setCustomers(custs);
-      setLeads(leadData);
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isAuthReady) return;
-
-    const handleDataFetch = () => fetchData();
-    handleDataFetch(); // Initial fetch
-    
-    // Set up listeners
-    window.addEventListener('focus', handleDataFetch);
-    window.addEventListener('userChanged', handleDataFetch);
-    
-    return () => {
-      window.removeEventListener('focus', handleDataFetch);
-      window.removeEventListener('userChanged', handleDataFetch);
-    };
-  }, [isAuthReady, fetchData]);
-  
-  const filteredDeals = useMemo(() => {
-    if (!date?.from || !date?.to) return allDeals;
-    return allDeals.filter(deal => 
-        deal.closeDate && isWithinInterval(deal.closeDate, { start: date.from!, end: date.to! })
-    );
-  }, [allDeals, date]);
-
-  const salesChartData = useMemo(() => {
-    const wonDeals = filteredDeals.filter(d => d.stage === 'Closed Won');
-    const monthlySales = wonDeals.reduce((acc, deal) => {
-        const month = format(startOfMonth(deal.closeDate), 'MMM yyyy');
-        acc[month] = (acc[month] || 0) + deal.value;
-        return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(monthlySales)
-        .map(([name, sales]) => ({ name, sales }))
-        .sort((a, b) => new Date(a.name).getTime() - new Date(b.name).getTime());
-  }, [filteredDeals]);
-
-  const metrics = useMemo(() => {
-    if (isLoading) return null;
-
-    const customersById = new Map(customers.map(c => [c.id, c]));
-    const totalLeads = leads.length;
-    const activeDealsCount = allDeals.filter(d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost').length;
-    
-    const wonDealsInPeriod = filteredDeals.filter(d => d.stage === 'Closed Won');
-    const totalRevenue = wonDealsInPeriod.reduce((acc, d) => acc + d.value, 0);
-    const totalSales = wonDealsInPeriod.length;
-
-    const recentSalesData = wonDealsInPeriod
-      .sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
-      .slice(0, 5)
-      .map(deal => {
-        const customer = customersById.get(deal.customerId);
-        return {
-          id: deal.id,
-          name: customer?.name || 'Unknown Customer',
-          email: customer?.email || '',
-          amount: deal.value,
-          avatar: customer?.avatar || "",
-        }
-      });
-      
-    const leadsBySourceData = leads.reduce((acc, lead) => {
-        if (lead.source) {
-            acc[lead.source] = (acc[lead.source] || 0) + 1;
-        }
-        return acc;
-    }, {} as Record<string, number>);
-
-    const leadsBySourceChartData = Object.entries(leadsBySourceData).map(([source, count]) => ({
-        name: source,
-        count: count,
-        fill: leadSourceColors[source] || leadSourceColors['Other'],
-    }));
-
-    return {
-      totalRevenue,
-      totalSales,
-      totalLeads,
-      activeDealsCount,
-      leadsBySource: leadsBySourceChartData,
-      dealsData: filteredDeals, // This is correct for AI summary in the selected period
-      recentSales: recentSalesData,
-    };
-  }, [isLoading, allDeals, filteredDeals, customers, leads]);
-  
-  if (!isAuthReady || isLoading || !metrics) {
-    return (
-      <DashboardLayout>
-        <div className="flex flex-col w-full">
-          <Header date={date} onDateChange={setDate}/>
-          <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
-            <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-              <Skeleton className="h-[125px] w-full" />
-              <Skeleton className="h-[125px] w-full" />
-              <Skeleton className="h-[125px] w-full" />
-              <Skeleton className="h-[125px] w-full" />
-            </div>
-            <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
-              <div className="lg:col-span-2 space-y-4">
-                <Skeleton className="h-[350px]" />
-                <Skeleton className="h-[400px]" />
-              </div>
-              <div className="space-y-4">
-                 <Skeleton className="h-[350px]" />
-                 <Skeleton className="h-[350px]" />
-              </div>
-            </div>
-          </main>
-        </div>
-      </DashboardLayout>
-    )
-  }
-
+export function LandingPage() {
   return (
-    <DashboardLayout>
-      <div className="flex flex-col w-full">
-        <Header date={date} onDateChange={setDate} />
-        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 overflow-auto">
-          <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
-            <MetricCard title="Total Revenue" value={`₦${metrics.totalRevenue.toLocaleString()}`} icon={<DollarSign className="h-4 w-4" />} description="Revenue from won deals in period" />
-            <MetricCard title="Sales" value={`+${metrics.totalSales.toLocaleString()}`} icon={<ShoppingCart className="h-4 w-4" />} description="Deals won in period" />
-            <MetricCard title="New Leads" value={`+${metrics.totalLeads.toLocaleString()}`} icon={<Users className="h-4 w-4" />} description="All leads acquired" />
-            <MetricCard title="Active Deals" value={`${metrics.activeDealsCount}`} icon={<Briefcase className="h-4 w-4" />} description="All deals not yet closed" />
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2 space-y-4">
-               <LineChartCard data={salesChartData} />
-               <RecentSales data={metrics.recentSales} totalSales={metrics.totalSales} />
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <LandingHeader />
+
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="w-full py-20 md:py-32 bg-white">
+          <div className="container mx-auto px-4 md:px-6 grid md:grid-cols-2 gap-8 items-center">
+            <div className="flex flex-col gap-4">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tighter">The AI-Powered CRM for Modern Sales Teams in Africa</h1>
+              <p className="text-lg text-muted-foreground">
+                Stop juggling spreadsheets. N-CRM helps you manage leads, close deals faster, and understand your customers like never before.
+              </p>
+              <div className="flex gap-4 mt-4">
+                <Button size="lg" asChild>
+                  <Link href="/signup">Get Started for Free</Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/login">Request a Demo</Link>
+                </Button>
+              </div>
             </div>
-            <div className="lg:col-span-1 space-y-4">
-               <AiSummary metrics={metrics} />
-               <PieChartCard data={metrics.leadsBySource} />
+            <div className="flex justify-center">
+              <Image
+                src="https://picsum.photos/600/400"
+                alt="CRM Dashboard Screenshot"
+                width={600}
+                height={400}
+                className="rounded-xl shadow-2xl"
+                data-ai-hint="dashboard product"
+              />
             </div>
           </div>
-        </main>
-      </div>
-    </DashboardLayout>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="w-full py-20 md:py-24">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold">Everything you need to grow your business</h2>
+              <p className="text-lg text-muted-foreground mt-2">Powerful features to supercharge your sales process.</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              <FeatureCard
+                icon={<Zap className="h-8 w-8 text-primary" />}
+                title="AI-Powered Insights"
+                description="Let AI analyze your deals, score your leads, and compose professional emails so you can focus on selling."
+              />
+              <FeatureCard
+                icon={<Eye className="h-8 w-8 text-primary" />}
+                title="360° Customer View"
+                description="Track every interaction, from initial lead to final sale, in one centralized place."
+              />
+              <FeatureCard
+                icon={<BarChartHorizontalBig className="h-8 w-8 text-primary" />}
+                title="Streamlined Sales Pipeline"
+                description="Visualize your entire sales process, identify bottlenecks, and forecast revenue with our intuitive dashboards."
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials Section */}
+        <section className="w-full py-20 md:py-24 bg-white">
+          <div className="container mx-auto px-4 md:px-6">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold">Loved by sales teams across the continent</h2>
+            </div>
+            <div className="flex gap-8 overflow-x-auto pb-8 snap-x snap-mandatory">
+              <TestimonialCard
+                quote="N-CRM transformed our sales process. The AI features are a game-changer and have saved us countless hours."
+                author="Adebayo Adekunle"
+                role="CEO, Innovate Nigeria"
+                avatar="https://picsum.photos/id/237/48/48"
+              />
+              <TestimonialCard
+                quote="Finally, a CRM that understands the local market. The currency and integration support are exactly what we needed."
+                author="Fatima Al-Hassan"
+                role="Head of Sales, TechSolutions Ghana"
+                avatar="https://picsum.photos/id/238/48/48"
+              />
+              <TestimonialCard
+                quote="Our productivity has skyrocketed. The dashboard gives us a clear overview of our performance at a glance."
+                author="Samuel Mwangi"
+                role="Sales Manager, Kazi Enterprises"
+                avatar="https://picsum.photos/id/239/48/48"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="w-full py-20 md:py-24">
+          <div className="container mx-auto px-4 md:px-6 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tighter mb-4">Ready to close more deals?</h2>
+            <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">Sign up today and experience the future of sales in Africa. Your first 25 leads are on us.</p>
+            <Button size="lg" asChild>
+              <Link href="/signup">Start Selling Smarter</Link>
+            </Button>
+          </div>
+        </section>
+      </main>
+
+      <footer className="w-full py-6 bg-white border-t">
+        <div className="container mx-auto px-4 md:px-6 flex justify-between items-center text-sm text-muted-foreground">
+          <p>© 2024 N-CRM. All rights reserved.</p>
+          <div className="flex gap-4">
+            <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
+            <Link href="/login" className="hover:text-foreground">Login</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

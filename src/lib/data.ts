@@ -102,6 +102,9 @@ export const auth = getAuth(app);
 let authPromise: Promise<FirebaseUser | null> | null = null;
 
 const ensureAuthReady = (): Promise<FirebaseUser | null> => {
+    if (typeof window === 'undefined') {
+        return Promise.resolve(null);
+    }
     if (!authPromise) {
         authPromise = new Promise((resolve) => {
             const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -731,7 +734,3 @@ export const leadsData = [];
 export const recentSales = [];
 export const teamPerformance = [];
 export const leadsSourceData = [];
-
-
-
-    
